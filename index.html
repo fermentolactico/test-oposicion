@@ -171,6 +171,9 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
 @keyframes avanza{to{width:94%}}
 @keyframes brillo{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
 @media (prefers-reduced-motion:reduce){.barra i{animation-duration:.01s}.barra i:after{animation:none}}
+.modal{position:fixed;inset:0;z-index:20;background:rgba(15,20,22,.45);display:grid;place-items:center;padding:16px}
+.modal .card{max-width:440px;width:100%}
+.modal h3{font-size:1.2rem;margin-bottom:6px}
 .btn.danger{color:var(--bad)}
 .btn.danger.armed{background:var(--bad);border-color:var(--bad);color:#fff}
 footer{margin-top:48px;font-size:.8rem;color:var(--muted);text-align:center}
@@ -335,7 +338,6 @@ function crear(tipo, temas, n) {
     minutos: sim ? R.minutos : Math.max(1, Math.round(R.minutos * n / (R.preguntas + R.reserva))),
     preguntas: principales.concat(elegidas.slice(n)), marcas: {}, inicio: Date.now(), corregido: null, usuario,
   };
-  if (sim) guardar(K.usadas, [...usadas, ...ex.preguntas.map(i => DATA.preguntas[i].h)]);
   return ex;
 }
 
@@ -375,7 +377,7 @@ function inicio() {
           el("button", { class: "btn", onclick: () => { borrar(K.actual); inicio(); } }, "Descartar"),
           el("button", { class: "btn primary", onclick: () => test(actual) }, "Continuar")))) : null,
     el("div", { class: "cards" },
-      el("button", { class: "card choice", onclick: () => test(crear("simulacro")) },
+      el("button", { class: "card choice", onclick: () => empezar(() => crear("simulacro")) },
         el("span", { class: "tag" }, "Como el examen real"),
         el("h2", {}, "Simulacro de examen"),
         el("div", { class: "facts" }, el("span", {}, `${R.preguntas} preguntas + ${R.reserva} de reserva`), el("span", {}, `${R.minutos} minutos`), el("span", {}, `Nota sobre ${R.maximo}`)),
@@ -433,8 +435,7 @@ function configurar() {
   const todos = v => () => { ts.forEach((t, i) => { v ? sel.add(t) : sel.delete(t); chips[i].setAttribute("aria-pressed", v); }); actualizar(); };
   input.addEventListener("input", actualizar);
   empezar.addEventListener("click", () => {
-    const ex = crear("test", [...sel], Math.max(1, parseInt(input.value) || 20));
-    if (ex) test(ex);
+    empezar(() => crear("test", [...sel], Math.max(1, parseInt(input.value) || 20)));
   });
   pintar(
     el("section", { class: "hero" }, el("h1", {}, "Test de estudio"), el("p", {}, "Elige los temas y cuántas preguntas quieres.")),
@@ -457,6 +458,22 @@ function configurar() {
 
 let tic = null;
 function pararReloj() { if (tic) clearInterval(tic); tic = null; }
+
+// Antes de empezar uno nuevo, si hay otro a medias se pregunta qué hacer con él
+function empezar(nuevo) {
+  const a = leer(K.actual, null);
+  if (!a || a.corregido) { const ex = nuevo(); if (ex) test(ex); return; }
+  const cerrar = () => capa.remove();
+  const capa = el("div", { class: "modal", onclick: e => { if (e.target === capa) cerrar(); } },
+    el("div", { class: "card", role: "dialog", "aria-modal": "true" },
+      el("h3", {}, "Tienes " + (a.tipo === "simulacro" ? "un simulacro" : "un test") + " a medias"),
+      el("p", { class: "muted small" }, `${Object.keys(a.marcas).length} de ${a.n + a.reserva} preguntas respondidas. Si empiezas otro, se pierde.`),
+      el("div", { class: "row", style: "margin-top:14px" },
+        el("button", { class: "btn primary", onclick: () => { cerrar(); test(a); } }, "Continuar el anterior"),
+        el("button", { class: "btn danger", onclick: () => { cerrar(); borrar(K.actual); const ex = nuevo(); if (ex) test(ex); } }, "Descartarlo y empezar"),
+        el("button", { class: "btn", onclick: cerrar }, "Cancelar"))));
+  document.body.append(capa);
+}
 
 function test(ex) {
   if (!ex) return;
@@ -491,12 +508,20 @@ function test(ex) {
     ];
   });
   const corregir = () => {
+    if (!Object.keys(ex.marcas).length) {      // un 0 sin contestar nada hundiría su media en el tablero
+      confirmar.textContent = "No has contestado ninguna pregunta. Si no quieres hacerlo, descártalo desde el inicio.";
+      confirmar.style.color = "var(--bad)";
+      return;
+    }
+    confirmar.style.color = "";
     const sinResponder = ex.n - Object.keys(ex.marcas).filter(k => k < ex.n).length;
     if (sinResponder > 0 && !confirmar.dataset.ok) {
       confirmar.textContent = `Te quedan ${sinResponder} en blanco. Pulsa otra vez para corregir.`;
       confirmar.dataset.ok = "1"; return;
     }
     ex.corregido = puntuar(ex);
+    // solo un simulacro corregido gasta sus preguntas; uno abandonado no
+    if (ex.tipo === "simulacro") guardar(K.usadas, [...new Set([...leer(K.usadas, []), ...ex.preguntas.map(i => DATA.preguntas[i].h)])]);
     guardar(K.actual, ex);
     const hist = leer(K.historial, []);
     hist.unshift({ tipo: ex.tipo, desc: ex.tipo === "simulacro" ? "100 preguntas" : `${temasTxt(ex.temas)} · ${ex.n} preg.`, nota: ex.corregido.nota, maximo: ex.maximo, aprobado: ex.corregido.aprobado, fin: ex.corregido.fin });
