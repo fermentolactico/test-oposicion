@@ -183,26 +183,39 @@ let DATA = null;
 const view = document.getElementById("view");
 // Almacén común: hoja de Google con un Apps Script (apps-script/Code.gs). Guarda usuarias, PIN,
 // resultados y el tablero. Este navegador solo guarda una copia y el test a medias.
-const API_REAL = "https://script.google.com/macros/s/PENDIENTE/exec";
+const API_REAL = "https://script.google.com/macros/s/AKfycbwT17MkyPWA_5rFy4t24WiNRFWGBjU0LcqtuloN72cB8aFSD5WxlMck6KkbH_WYaPFW/exec";
 const API = (["127.0.0.1", "localhost"].includes(location.hostname) && new URLSearchParams(location.search).get("api")) || API_REAL;
 let usuario = null, clave = null, USUARIAS = [], TABLERO = [];
+// Perfil de pruebas: no sale en el tablero ni entre las tarjetas; se entra con …/test-oposicion/?prueba
+const PRUEBA = "Prueba", VER_PRUEBA = new URLSearchParams(location.search).has("prueba");
 const K = {
   get actual() { return `oposicion.${usuario}.actual`; },
   get historial() { return `oposicion.${usuario}.historial`; },
   get usadas() { return `oposicion.${usuario}.usadas`; },
   get pendientes() { return `oposicion.${usuario}.pendientes`; },
 };
-async function api(datos) {
-  const r = await fetch(API, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(datos) });
-  const j = await r.json();
-  if (!j.ok) throw new Error(j.error || "Error del servidor.");
-  if (j.tablero) TABLERO = j.tablero;
-  return j;
+// Google a veces devuelve una respuesta vacía o rota: se reintenta. Repetir es seguro porque el
+// servidor no guarda dos veces el mismo resultado y el resto de acciones no duplican nada.
+async function pedir(url, opciones) {
+  let ultimo;
+  for (let intento = 0; intento < 4; intento++) {
+    if (intento) await new Promise(r => setTimeout(r, 700 * intento));
+    try {
+      const j = await (await fetch(url, opciones)).json();
+      if (!j.ok) throw Object.assign(new Error(j.error || "Error del servidor."), { delServidor: true });
+      if (j.tablero) TABLERO = j.tablero.filter(t => t.nombre !== PRUEBA);
+      return j;
+    } catch (err) {
+      if (err.delServidor) throw err;          // PIN incorrecto, bloqueo…: no se reintenta
+      ultimo = err;
+    }
+  }
+  throw new Error("Sin conexión con el servidor.");
 }
+const api = datos => pedir(API, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(datos) });
 async function cargarEstado() {
-  const j = await (await fetch(API + "?accion=estado")).json();
-  if (!j.ok) throw new Error(j.error || "Error del servidor.");
-  USUARIAS = j.usuarias; TABLERO = j.tablero;
+  const j = await pedir(API + "?accion=estado");
+  USUARIAS = j.usuarias.filter(u => u.nombre !== PRUEBA || VER_PRUEBA);
 }
 // Identificador corto y estable de cada pregunta (para no repetirlas entre simulacros)
 const corto = t => { let h = 0x811c9dc5; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return h.toString(36); };
@@ -756,7 +769,7 @@ function entrada() {
         try { await api({ accion: "nueva", nombre: n }); await cargarEstado(); pedirPin(n); }
         catch (err) { avisoNuevo.textContent = err.message; ev.target.disabled = false; }
       } }, "Continuar")), avisoNuevo);
-  const quedanHuecos = USUARIAS.length < 5;
+  const quedanHuecos = USUARIAS.filter(u => u.nombre !== PRUEBA).length < 5;
   pintar(
     el("section", { class: "hero center" }, el("h1", {}, "¿Quién eres?"), el("p", {}, "Cada una tiene sus resultados y su PIN, desde cualquier aparato.")),
     el("div", { class: "perfiles" },
@@ -797,7 +810,7 @@ function pedirPin(u) {
     } catch (err) {
       ocupado = false; pin = "";
       if (fase === "repetir") { fase = "crear"; primero = ""; }
-      error(err.message === "Failed to fetch" ? "Sin conexión con el servidor." : err.message);
+      error(err.message);
     }
   };
   const pulsar = d => {

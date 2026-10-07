@@ -9,6 +9,7 @@
  */
 const HOJA_USUARIAS = "Usuarias", HOJA_RESULTADOS = "Resultados", HOJA_USADAS = "Usadas";
 const INICIALES = ["Ana", "Carmen", "Georgina"];
+const PRUEBA = "Prueba";   // perfil de pruebas: no sale en el tablero ni ocupa plaza
 const MAX_USUARIAS = 5, MAX_FALLOS = 5, BLOQUEO_SEG = 15 * 60, ZONA = "Europe/Madrid";
 
 function doGet(e) {
@@ -84,7 +85,7 @@ function nueva(nombre) {
   nombre = limpiaNombre(nombre);
   const h = hoja(HOJA_USUARIAS);
   if (filaDe(h, nombre)) return { ok: true };
-  if (filas(h).length >= MAX_USUARIAS) throw new Error(`Ya hay ${MAX_USUARIAS} personas.`);
+  if (nombre !== PRUEBA && filas(h).filter(f => f[0] !== PRUEBA).length >= MAX_USUARIAS) throw new Error(`Ya hay ${MAX_USUARIAS} personas.`);
   h.appendRow([nombre, "", new Date()]);
   return { ok: true };
 }
@@ -112,6 +113,9 @@ function comprobar(nombre, clave) {
 // ---------- resultados ----------
 function guardar(nombre, r, ids) {
   if (!r || typeof r.nota !== "number") throw new Error("Resultado no válido.");
+  // la web reintenta si una respuesta se pierde: el mismo resultado (persona y hora exacta) solo se guarda una vez
+  const fin = Number(r.fin) || Date.now();
+  if (filas(hoja(HOJA_RESULTADOS)).some(f => f[1] === nombre && Number(f[11]) === fin)) return { ok: true, tablero: tablero() };
   hoja(HOJA_RESULTADOS).appendRow([new Date(r.fin || Date.now()), nombre, r.tipo === "simulacro" ? "simulacro" : "test",
     String(r.desc || "").slice(0, 120), r.nota, r.maximo, r.aprobado ? "sí" : "no", r.a, r.e, r.b, r.n, r.fin || Date.now()]);
   if (Array.isArray(ids) && ids.length) {
@@ -142,11 +146,11 @@ function borrarTodo(nombre) {
 
 // ---------- tablero (público) ----------
 function estado() {
-  const us = filas(hoja(HOJA_USUARIAS)).map(f => ({ nombre: f[0], tienePin: !!f[1] }));
+  const us = filas(hoja(HOJA_USUARIAS)).map(f => ({ nombre: f[0], tienePin: !!f[1] }));   // la web oculta «Prueba» salvo con ?prueba
   return { ok: true, usuarias: us, tablero: tablero(us.map(u => u.nombre)) };
 }
 function tablero(nombres) {
-  nombres = nombres || filas(hoja(HOJA_USUARIAS)).map(f => f[0]);
+  nombres = (nombres || filas(hoja(HOJA_USUARIAS)).map(f => f[0])).filter(n => n !== PRUEBA);
   const ahora = new Date();
   const diaSemana = Number(Utilities.formatDate(ahora, ZONA, "u"));          // 1 = lunes
   const lunes = Utilities.formatDate(new Date(ahora.getTime() - (diaSemana - 1) * 86400000), ZONA, "yyyy-MM-dd");
