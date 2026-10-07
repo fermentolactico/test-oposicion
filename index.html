@@ -174,6 +174,27 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
 .modal{position:fixed;inset:0;z-index:20;background:rgba(15,20,22,.45);display:grid;place-items:center;padding:16px}
 .modal .card{max-width:440px;width:100%}
 .modal h3{font-size:1.2rem;margin-bottom:6px}
+.choice.reto{border-style:dashed}
+@media (min-width:640px){.cards .choice.reto{grid-column:1 / -1}}
+.retos:empty{display:none}
+.retos{display:grid;gap:12px;margin-bottom:16px}
+.invitacion{border-color:var(--accent);background:var(--accent-soft)}
+.perfiles.izq{justify-content:start;max-width:none;margin:12px 0 0;grid-template-columns:repeat(auto-fill,minmax(110px,1fr))}
+.perfil.mini{padding:14px 8px}
+.perfil.mini .avatar.big{width:48px;height:48px;font-size:1.2rem}
+.perfil[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 2px var(--accent) inset}
+.segs{display:inline-flex;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.seg{border:0;background:var(--surface);color:var(--ink);padding:9px 16px;font-weight:600}
+.seg[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.sala{display:grid;gap:8px}
+.fila-sala{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)}
+.cuenta-capa{background:color-mix(in srgb,var(--bg) 92%,transparent)}
+.cuenta{font-family:Fraunces,serif;font-size:7rem;font-weight:650;color:var(--accent);line-height:1}
+.avance{display:grid;gap:8px;margin-bottom:14px;padding:12px 14px}
+.fila-avance{display:grid;grid-template-columns:minmax(90px,auto) 1fr auto;gap:10px;align-items:center}
+.mini{height:8px;border-radius:8px;background:var(--surface-2);overflow:hidden}
+.mini i{display:block;height:100%;border-radius:8px;transition:width .4s}
+.puesto{display:inline-block;min-width:1.6em}
 .btn.danger{color:var(--bad)}
 .btn.danger.armed{background:var(--bad);border-color:var(--bad);color:#fff}
 footer{margin-top:48px;font-size:.8rem;color:var(--muted);text-align:center}
@@ -375,6 +396,7 @@ function inicio() {
       el("h1", {}, "Practica como en el examen"),
       el("p", {}, "Elige un simulacro completo o un test de estudio con los temas que quieras.")),
     vistaTablero(),
+    zonaRetos(),
     actual && !actual.corregido ? el("div", { class: "card", style: "margin-bottom:16px" },
       el("div", { class: "row", style: "justify-content:space-between" },
         el("div", {}, el("b", {}, "Tienes un " + (actual.tipo === "simulacro" ? "simulacro" : "test") + " sin terminar"),
@@ -392,7 +414,12 @@ function inicio() {
         el("span", { class: "tag" }, "A tu medida"),
         el("h2", {}, "Test de estudio"),
         el("div", { class: "facts" }, el("span", {}, "Los temas que elijas"), el("span", {}, "Las preguntas que quieras"), el("span", {}, "Nota sobre 10")),
-        el("p", { class: "muted small", style: "margin:0" }, "Preguntas al azar del banco, repartidas entre los temas elegidos."))),
+        el("p", { class: "muted small", style: "margin:0" }, "Preguntas al azar del banco, repartidas entre los temas elegidos.")),
+      el("button", { class: "card choice reto", onclick: configurarReto },
+        el("span", { class: "tag" }, "A la vez"),
+        el("h2", {}, "Reto en grupo"),
+        el("div", { class: "facts" }, el("span", {}, "Las mismas preguntas"), el("span", {}, "El mismo reloj"), el("span", {}, "El avance de todas en directo")),
+        el("p", { class: "muted small", style: "margin:0" }, "Invita a las que quieras, empezad a la vez y mirad quién gana."))),
     hist.length ? el("h3", { class: "section-title" }, "Tus últimos resultados") : null,
     hist.length ? el("div", { class: "card" }, el("ul", { class: "hist" },
       hist.slice(0, 12).map(h => el("li", {},
@@ -530,21 +557,23 @@ function test(ex) {
     if (ex.tipo === "simulacro") guardar(K.usadas, [...new Set([...leer(K.usadas, []), ...ex.preguntas.map(i => DATA.preguntas[i].h)])]);
     guardar(K.actual, ex);
     const hist = leer(K.historial, []);
-    hist.unshift({ tipo: ex.tipo, desc: ex.tipo === "simulacro" ? "100 preguntas" : `${temasTxt(ex.temas)} · ${ex.n} preg.`, nota: ex.corregido.nota, maximo: ex.maximo, aprobado: ex.corregido.aprobado, fin: ex.corregido.fin });
+    hist.unshift({ tipo: ex.tipo, desc: (ex.reto ? "Reto · " : "") + (ex.tipo === "simulacro" ? "100 preguntas" : `${temasTxt(ex.temas)} · ${ex.n} preg.`), nota: ex.corregido.nota, maximo: ex.maximo, aprobado: ex.corregido.aprobado, fin: ex.corregido.fin });
     guardar(K.historial, hist.slice(0, 50));
     const envio = { ...hist[0], a: ex.corregido.a, e: ex.corregido.e, b: ex.corregido.b, n: ex.n };
     guardar(K.pendientes, [...leer(K.pendientes, []), envio]);
     resultado(ex);
     enviarPendientes();
+    if (ex.reto) terminarRetoEnviar(ex);
   };
   const confirmar = el("p", { class: "muted small center" });
   pintar(
     el("div", { class: "bar" }, el("div", { class: "inner" },
-      el("div", {}, el("b", {}, ex.tipo === "simulacro" ? "Simulacro de examen" : "Test de estudio"), " ", cont),
+      el("div", {}, el("b", {}, (ex.reto ? "Reto · " : "") + (ex.tipo === "simulacro" ? "Simulacro" : "Test")), " ", cont),
       el("div", { class: "row" }, clock,
         el("button", { class: "btn primary small", onclick: corregir }, "Corregir"))),
       el("div", { class: "progress" }, barra)),
     ex.aviso ? el("div", { class: "notice" }, ex.aviso) : null,
+    ex.reto ? avanceReto(ex) : null,
     el("p", { class: "muted small" }, `${temasTxt(ex.temas)} · ${ex.n} preguntas${ex.reserva ? ` + ${ex.reserva} de reserva` : ""} · ${ex.minutos} minutos. Acierto ${coma(ex.maximo / ex.n, 3)}; un error resta la cuarta parte; en blanco, 0. Pulsa otra vez una opción para dejarla en blanco.`),
     el("div", { class: "row", style: "margin-bottom:18px" },
       el("button", { class: "btn small", onclick: () => pdfTest(ex) }, "Descargar test"),
@@ -601,12 +630,228 @@ function resultado(ex) {
       el("button", { class: "btn", onclick: () => pdfTest(ex) }, "Descargar test"),
       el("button", { class: "btn", onclick: () => pdfRespuestas(ex) }, "Descargar respuestas"),
       el("button", { class: "btn primary", onclick: () => { borrar(K.actual); inicio(); } }, "Nuevo test")),
+    ex.reto ? clasificacionReto(ex) : null,
     el("h3", { class: "section-title" }, "Por tema"),
     el("div", { class: "bytema" }, Object.entries(r.porTema).sort((a, b) => a[0] - b[0]).map(([t, v]) =>
       el("div", {}, el("span", {}, "T" + t), el("b", { style: `color:${v[0] === v[1] ? "var(--ok)" : v[0] === 0 ? "var(--bad)" : "var(--ink)"}` }, `${v[0]}/${v[1]}`)))),
     el("div", { class: "filters" }, filtros),
     lista
   );
+}
+
+// ---------- retos en grupo ----------
+// Una crea el reto (las preguntas las elige su navegador) e invita; las demás aceptan; la
+// creadora lo empieza y, tras 5 s de cuenta atrás, todas lo hacen a la vez con el mismo reloj.
+// Cada 4-5 s cada una manda cuántas lleva y recibe cuántas llevan las demás.
+let indiceH = null;
+const preguntaDe = h => { if (!indiceH) indiceH = new Map(DATA.preguntas.map((p, i) => [p.h, i])); return indiceH.get(h); };
+const nombresLista = ns => ns.length < 2 ? ns.join("") : ns.slice(0, -1).join(", ") + " y " + ns[ns.length - 1];
+const otrasDe = reto => reto.participantes.filter(p => p.nombre !== usuario);
+function sondear(ms, fn, vivo) {        // repite fn cada ms mientras vivo() sea cierto (o sea, mientras se vea la pantalla)
+  let parado = false;
+  const vuelta = async () => { if (parado || !vivo()) return; try { await fn(); } catch {} if (!parado && vivo()) setTimeout(vuelta, ms); };
+  setTimeout(vuelta, 0);              // primero se pinta la pantalla, luego se pregunta
+  return () => { parado = true; };
+}
+
+function zonaRetos() {
+  const caja = el("div", { class: "retos" });
+  sondear(6000, async () => {
+    const { retos } = await api({ accion: "misRetos", nombre: usuario, clave });
+    const local = leer(K.actual, null);
+    caja.replaceChildren(...retos.filter(r => !(local && local.reto && local.reto.id === r.id)).map(r => {
+      const yo = r.participantes.find(p => p.nombre === usuario);
+      const que = r.tipo === "simulacro" ? "un simulacro" : `un test de ${r.config.n} preguntas (${temasTxt(r.config.temas).toLowerCase()})`;
+      const con = nombresLista(r.participantes.filter(p => p.nombre !== usuario && p.nombre !== r.creadora).map(p => p.nombre));
+      let texto, botones;
+      if (r.estado === "en_curso") {
+        texto = `El reto de ${r.creadora === usuario ? "ti" : r.creadora} ya ha empezado.`;
+        botones = [el("button", { class: "btn primary", onclick: () => empezar(() => exDeReto(r)) }, "Entrar ahora")];
+      } else if (yo.estado === "invitada") {
+        texto = `${r.creadora} te reta a ${que}${con ? ", con " + con : ""}.`;
+        botones = [
+          el("button", { class: "btn", onclick: async ev => { ev.target.disabled = true; await api({ accion: "responderReto", nombre: usuario, clave, id: r.id, acepta: false }).catch(() => {}); inicio(); } }, "Rechazar"),
+          el("button", { class: "btn primary", onclick: async ev => { ev.target.disabled = true; try { const j = await api({ accion: "responderReto", nombre: usuario, clave, id: r.id, acepta: true }); sala(j.reto); } catch (e) { ev.target.textContent = e.message; } } }, "Aceptar"),
+        ];
+      } else {
+        texto = r.creadora === usuario ? `Tu reto (${que}) espera a que empieces.` : `Has aceptado el reto de ${r.creadora}: esperando a que empiece.`;
+        botones = [el("button", { class: "btn primary", onclick: () => sala(r) }, "Ir a la sala")];
+      }
+      return el("div", { class: "card invitacion" },
+        el("div", { class: "row", style: "gap:10px" }, avatar(r.creadora), el("div", { style: "flex:1;min-width:180px" }, el("b", {}, "Reto en grupo"), el("div", { class: "small" }, texto))),
+        el("div", { class: "row", style: "justify-content:flex-end;margin-top:10px" }, botones));
+    }));
+  }, () => caja.isConnected);
+  return caja;
+}
+
+function configurarReto() {
+  const otras = USUARIAS.filter(u => u.nombre !== usuario && (u.nombre !== PRUEBA || VER_PRUEBA)).map(u => u.nombre);
+  const elegidas = new Set();
+  let tipo = "simulacro";
+  const disp = {};
+  DATA.preguntas.forEach(p => disp[p.t] = (disp[p.t] || 0) + 1);
+  const ts = Object.keys(disp).map(Number).sort((a, b) => a - b);
+  const sel = new Set();
+  const input = el("input", { type: "number", min: "1", value: "20", inputmode: "numeric", "aria-label": "Número de preguntas" });
+  const aviso = el("p", { class: "muted small" });
+  const enviar = el("button", { class: "btn primary" }, "Enviar el reto");
+  const zonaTemas = el("div", { class: "hidden" });
+  const actualizar = () => {
+    const faltan = !elegidas.size ? "Elige al menos a una persona." : tipo === "test" && !sel.size ? "Elige al menos un tema." : "";
+    aviso.textContent = faltan || `${tipo === "simulacro" ? "Simulacro de 100 + 10 preguntas" : `Test de ${input.value} preguntas`} con ${nombresLista([...elegidas])}.`;
+    enviar.disabled = !!faltan;
+    zonaTemas.classList.toggle("hidden", tipo !== "test");
+  };
+  const tipos = [["simulacro", "Simulacro"], ["test", "Test por temas"]].map(([v, t]) => {
+    const b = el("button", { class: "seg", "aria-pressed": v === tipo ? "true" : "false", onclick: () => { tipo = v; tipos.forEach(x => x.setAttribute("aria-pressed", x === b)); actualizar(); } }, t);
+    return b;
+  });
+  const chipsTemas = ts.map(t => {
+    const b = el("button", { class: "tema", "aria-pressed": "false", onclick: () => { sel.has(t) ? sel.delete(t) : sel.add(t); b.setAttribute("aria-pressed", sel.has(t)); actualizar(); } }, el("b", {}, t), el("span", {}, disp[t] + " preg."));
+    return b;
+  });
+  zonaTemas.append(el("div", { class: "temas" }, chipsTemas),
+    el("div", { class: "field" }, el("label", {}, "Número de preguntas"), el("div", { class: "num" },
+      el("button", { "aria-label": "Menos", onclick: () => { input.value = Math.max(1, (parseInt(input.value) || 20) - 5); actualizar(); } }, "−"), input,
+      el("button", { "aria-label": "Más", onclick: () => { input.value = (parseInt(input.value) || 20) + 5; actualizar(); } }, "+"))));
+  input.addEventListener("input", actualizar);
+  const personas = otras.map(n => {
+    const b = el("button", { class: "perfil mini", "aria-pressed": "false", onclick: () => { elegidas.has(n) ? elegidas.delete(n) : elegidas.add(n); b.setAttribute("aria-pressed", elegidas.has(n)); actualizar(); } }, avatar(n, true), el("b", {}, n));
+    return b;
+  });
+  enviar.addEventListener("click", async () => {
+    const ex = tipo === "simulacro" ? crear("simulacro") : crear("test", [...sel], Math.max(1, parseInt(input.value) || 20));
+    if (!ex) return;
+    enviar.disabled = true; enviar.textContent = "Enviando…";
+    try {
+      const j = await api({ accion: "crearReto", nombre: usuario, clave, tipo, invitadas: [...elegidas], minutos: ex.minutos,
+        config: { temas: ex.temas, n: ex.n, reserva: ex.reserva, maximo: ex.maximo, minimo: ex.minimo },
+        preguntas: ex.preguntas.map(i => DATA.preguntas[i].h) });
+      sala(j.reto);
+    } catch (e) { enviar.disabled = false; enviar.textContent = "Enviar el reto"; aviso.textContent = e.message; }
+  });
+  pintar(
+    el("section", { class: "hero" }, el("h1", {}, "Reto en grupo"), el("p", {}, "Elegid las mismas preguntas, empezad a la vez y mirad el avance de todas.")),
+    el("div", { class: "card" },
+      el("b", {}, "¿A quién retas?"),
+      otras.length ? el("div", { class: "perfiles izq" }, personas) : el("p", { class: "muted small" }, "Todavía no hay nadie más."),
+      el("div", { class: "field" }, el("label", {}, "¿Qué hacéis?"), el("div", { class: "segs" }, tipos)),
+      zonaTemas, aviso,
+      el("div", { class: "row", style: "margin-top:8px" }, enviar, el("button", { class: "btn", onclick: inicio }, "Volver")))
+  );
+  actualizar();
+}
+
+function exDeReto(reto, desfase = reto.ahora - Date.now()) {
+  const preguntas = reto.preguntas.map(preguntaDe).filter(i => i !== undefined);
+  const n = Math.min(reto.config.n, preguntas.length);
+  return { tipo: reto.tipo, temas: reto.config.temas, n, reserva: preguntas.length - n, maximo: reto.config.maximo, minimo: reto.config.minimo, aviso: "",
+    minutos: reto.minutos, preguntas, marcas: {}, inicio: reto.inicio - desfase, corregido: null, usuario, reto: { id: reto.id, creadora: reto.creadora } };
+}
+
+function sala(reto) {
+  pararReloj();
+  const lista = el("div", { class: "sala" }), botones = el("div", { class: "row", style: "margin-top:14px" }), nota = el("p", { class: "muted small" });
+  const caja = el("div", { class: "card" }, lista, nota, botones);
+  const soyCreadora = reto.creadora === usuario;
+  const ESTADOS = { aceptada: ["Dentro", "ok"], invitada: ["Esperando respuesta", ""], rechazada: ["No viene", "bad"], sin_respuesta: ["No contestó", "bad"] };
+  const pintarSala = r => {
+    lista.replaceChildren(...r.participantes.map(p => el("div", { class: "fila-sala" }, el("span", { class: "chip" }, avatar(p.nombre), p.nombre + (p.nombre === r.creadora ? " (reta)" : "")),
+      el("span", { class: "pill " + ESTADOS[p.estado][1] }, ESTADOS[p.estado][0]))));
+    const dentro = r.participantes.filter(p => p.estado === "aceptada").length;
+    if (r.estado === "cancelado" || r.estado === "caducado") {
+      nota.textContent = r.estado === "cancelado" ? "Este reto se ha cancelado." : "Este reto ha caducado sin empezar.";
+      botones.replaceChildren(el("button", { class: "btn", onclick: inicio }, "Volver al inicio")); return true;
+    }
+    if (soyCreadora) {
+      nota.textContent = dentro < 2 ? "Cuando alguna acepte podrás empezar. Las que no hayan contestado se quedan fuera." : `${dentro} dentro. Empieza cuando quieras: las que no hayan contestado se quedan fuera.`;
+      botones.replaceChildren(
+        el("button", { class: "btn primary", disabled: dentro < 2, onclick: async ev => { ev.target.disabled = true; try { const j = await api({ accion: "empezarReto", nombre: usuario, clave, id: r.id }); arrancar(j.reto); } catch (e) { nota.textContent = e.message; ev.target.disabled = false; } } }, "Empezar ahora"),
+        el("button", { class: "btn danger", onclick: async () => { await api({ accion: "cancelarReto", nombre: usuario, clave, id: r.id }).catch(() => {}); inicio(); } }, "Cancelar el reto"));
+    } else {
+      nota.textContent = `Esperando a que ${r.creadora} empiece el reto…`;
+      botones.replaceChildren(el("button", { class: "btn", onclick: inicio }, "Volver al inicio (puedes volver a la sala)"));
+    }
+    return false;
+  };
+  let empezado = false;
+  const arrancar = r => {
+    if (empezado) return; empezado = true;
+    const desfase = r.ahora - Date.now(), ex = exDeReto(r, desfase);
+    cuentaAtras(ex.inicio, () => empezar(() => ex));
+  };
+  pintar(el("section", { class: "hero" }, el("h1", {}, "Sala del reto"),
+      el("p", {}, (reto.tipo === "simulacro" ? "Simulacro de examen" : `Test de ${reto.config.n} preguntas · ${temasTxt(reto.config.temas)}`) + ` · ${reto.minutos} minutos`)),
+    caja);
+  pintarSala(reto);
+  if (reto.estado === "en_curso") return arrancar(reto);
+  sondear(2500, async () => {
+    const { reto: r } = await api({ accion: "pulso", nombre: usuario, clave, id: reto.id });
+    if (r.estado === "en_curso") return arrancar(r);
+    pintarSala(r);
+  }, () => caja.isConnected && !empezado);
+}
+
+function cuentaAtras(inicioLocal, despues) {
+  const num = el("div", { class: "cuenta" }), capa = el("div", { class: "modal cuenta-capa" }, el("div", { class: "center" }, el("p", { class: "muted" }, "El reto empieza en"), num));
+  document.body.append(capa);
+  const paso = () => {
+    const quedan = Math.ceil((inicioLocal - Date.now()) / 1000);
+    if (quedan <= 0) { capa.remove(); return despues(); }
+    num.textContent = quedan; setTimeout(paso, 200);
+  };
+  paso();
+}
+
+function avanceReto(ex) {
+  const caja = el("div", { class: "card avance" }, el("p", { class: "muted small", style: "margin:0" }, "Cargando el avance de las demás…"));
+  const total = ex.n + ex.reserva;
+  sondear(4500, async () => {
+    const { reto } = await api({ accion: "pulso", nombre: usuario, clave, id: ex.reto.id, respondidas: Object.keys(ex.marcas).length });
+    const otras = otrasDe(reto).filter(p => p.estado === "aceptada");
+    caja.replaceChildren(...otras.map(p => el("div", { class: "fila-avance" },
+      el("span", { class: "chip" }, avatar(p.nombre), p.nombre),
+      el("div", { class: "mini" }, el("i", { style: `width:${Math.round(100 * Math.min(p.respondidas, total) / total)}%;background:${colorDe(p.nombre)}` })),
+      el("span", { class: "small" + (p.terminado ? "" : " muted") }, p.terminado ? "✓ Ha terminado" : `${p.respondidas}/${total}`))));
+  }, () => caja.isConnected);
+  return caja;
+}
+
+async function terminarRetoEnviar(ex) {
+  const r = ex.corregido;
+  const datos = { accion: "terminarReto", nombre: usuario, clave, id: ex.reto.id,
+    r: { nota: r.nota, maximo: ex.maximo, a: r.a, e: r.e, b: r.b, fin: r.fin, respondidas: Object.keys(ex.marcas).length } };
+  for (let i = 0; i < 5; i++) { try { await api(datos); return; } catch { await new Promise(z => setTimeout(z, 3000 * (i + 1))); } }
+}
+
+function clasificacionReto(ex) {
+  const caja = el("section", { class: "card tablero" }, el("h3", {}, "Clasificación del reto"), el("p", { class: "muted small" }, "Cargando…"));
+  const total = ex.n + ex.reserva;
+  const pintarla = reto => {
+    const ps = reto.participantes.filter(p => p.estado === "aceptada");
+    const hechas = ps.filter(p => p.terminado).sort((a, b) => b.nota - a.nota || (a.fin - b.fin));
+    const faltan = ps.filter(p => !p.terminado);
+    const medallas = ["🥇", "🥈", "🥉"];
+    const tiempo = p => reloj(Math.max(0, Math.round((p.fin - reto.inicio) / 1000)));
+    caja.replaceChildren(el("h3", {}, "Clasificación del reto"),
+      el("table", {},
+        el("thead", {}, el("tr", {}, el("th", {}, ""), el("th", {}, "Nota"), el("th", {}, "Aciertos"), el("th", {}, "Tiempo"))),
+        el("tbody", {},
+          hechas.map((p, i) => el("tr", { class: p.nombre === usuario ? "yo" : "" },
+            el("td", {}, el("span", { class: "chip" }, el("span", { class: "puesto" }, medallas[i] || `${i + 1}.`), avatar(p.nombre), p.nombre)),
+            el("td", { class: i === 0 ? "top" : "" }, coma(p.nota)), el("td", {}, `${p.a}/${ex.n}`), el("td", {}, tiempo(p)))),
+          faltan.map(p => el("tr", {}, el("td", {}, el("span", { class: "chip" }, el("span", { class: "puesto" }, "…"), avatar(p.nombre), p.nombre)),
+            el("td", { colspan: "3", class: "muted" }, `Haciéndolo: ${p.respondidas}/${total}`))))),
+      faltan.length ? el("p", { class: "muted small", style: "margin:10px 0 0" }, "Se actualiza sola cuando terminen las demás.") : null);
+    return !faltan.length;
+  };
+  let listo = false;
+  sondear(5000, async () => {
+    const { reto } = await api({ accion: "pulso", nombre: usuario, clave, id: ex.reto.id });
+    listo = pintarla(reto);
+  }, () => caja.isConnected && !listo);
+  return caja;
 }
 
 // ---------- PDF (jsPDF 4.2.1) ----------

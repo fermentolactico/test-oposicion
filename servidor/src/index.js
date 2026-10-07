@@ -6,6 +6,8 @@
  *   POST {accion:"crearPin", nombre, clave}  → primer PIN
  *   POST {accion:"entrar"|"guardar"|"borrar", nombre, clave, …}
  *   POST {accion:"admin", token, op, …}      → página de administración (secreto ADMIN)
+ *   Retos en grupo (todas con nombre y clave): crearReto, misRetos, responderReto, empezarReto,
+ *   cancelarReto, pulso (manda su avance y recibe el de las demás) y terminarReto.
  * La web manda el PIN ya resumido (SHA-256); aquí se resume otra vez con la sal secreta SAL.
  * Cinco fallos seguidos bloquean a esa persona 15 minutos.
  */
@@ -46,6 +48,13 @@ async function accion(env, d) {
     case "guardar": await comprobar(env, d.nombre, d.clave); return guardar(env, d.nombre, d.resultado, d.usadas);
     case "borrar": await comprobar(env, d.nombre, d.clave); return borrarTodo(env, d.nombre);
     case "admin": return admin(env, d);
+    case "crearReto": await comprobar(env, d.nombre, d.clave); return crearReto(env, d);
+    case "misRetos": await comprobar(env, d.nombre, d.clave); return misRetos(env, d.nombre);
+    case "responderReto": await comprobar(env, d.nombre, d.clave); return responderReto(env, d.nombre, d.id, !!d.acepta);
+    case "empezarReto": await comprobar(env, d.nombre, d.clave); return empezarReto(env, d.nombre, d.id);
+    case "cancelarReto": await comprobar(env, d.nombre, d.clave); return cancelarReto(env, d.nombre, d.id);
+    case "pulso": await comprobar(env, d.nombre, d.clave); return pulso(env, d.nombre, d.id, d.respondidas);
+    case "terminarReto": await comprobar(env, d.nombre, d.clave); return terminarReto(env, d.nombre, d.id, d.r);
     default: throw new Error("Acción desconocida.");
   }
 }
@@ -171,9 +180,104 @@ async function admin(env, d) {
       env.DB.prepare("DELETE FROM fallos WHERE nombre = ?").bind(d.nombre),
     ]);
   } else if (d.op === "borrarUsuaria") {
-    await env.DB.batch(["usuarias", "resultados", "usadas", "fallos"].map(t => env.DB.prepare(`DELETE FROM ${t} WHERE nombre = ?`).bind(d.nombre)));
+    await env.DB.batch(["usuarias", "resultados", "usadas", "fallos", "reto_part"].map(t => env.DB.prepare(`DELETE FROM ${t} WHERE nombre = ?`).bind(d.nombre)));
   } else if (d.op !== "listar") throw new Error("Operación desconocida.");
   const us = (await env.DB.prepare("SELECT nombre, pin != '' AS tienePin, alta FROM usuarias ORDER BY alta, nombre").all()).results;
   const res = (await env.DB.prepare("SELECT nombre, tipo, descr, nota, maximo, aprobado, a, e, b, n, fin FROM resultados ORDER BY fin DESC").all()).results;
   return { ok: true, usuarias: us.map(u => ({ ...u, tienePin: !!u.tienePin })), resultados: res, tablero: await tablero(env) };
+}
+
+// ---------- retos en grupo ----------
+const CADUCA_ESPERA_MS = 60 * 60 * 1000;        // una invitación sin empezar caduca en una hora
+const MARGEN_FIN_MS = 3 * 60 * 60 * 1000;       // un reto en curso se da por cerrado 3 h después de su tiempo
+
+async function leerReto(env, id) {
+  const r = await env.DB.prepare("SELECT * FROM retos WHERE id = ?").bind(String(id || "")).first();
+  if (!r) throw new Error("Ese reto no existe.");
+  const parts = (await env.DB.prepare("SELECT nombre, estado, respondidas, terminado, nota, maximo, a, e, b, fin FROM reto_part WHERE reto = ? ORDER BY orden").bind(r.id).all()).results;
+  const ahora = Date.now();
+  const enJuego = parts.filter(p => p.estado === "aceptada");
+  let estado = r.estado;
+  if (estado === "esperando" && ahora - r.creado > CADUCA_ESPERA_MS) estado = "caducado";
+  if (estado === "en_curso" && (enJuego.every(p => p.terminado) || ahora > r.inicio + r.minutos * 60000 + MARGEN_FIN_MS)) estado = "terminado";
+  return {
+    id: r.id, creadora: r.creadora, tipo: r.tipo, config: JSON.parse(r.config), preguntas: JSON.parse(r.preguntas),
+    minutos: r.minutos, estado, creado: r.creado, inicio: r.inicio, ahora,
+    participantes: parts.map(p => ({ ...p, terminado: !!p.terminado })),
+  };
+}
+function soyParte(reto, nombre) {
+  const yo = reto.participantes.find(p => p.nombre === nombre);
+  if (!yo) throw new Error("No participas en ese reto.");
+  return yo;
+}
+async function crearReto(env, d) {
+  const nombre = d.nombre;
+  const invitadas = [...new Set((Array.isArray(d.invitadas) ? d.invitadas : []).map(String))].filter(n => n !== nombre);
+  if (!invitadas.length || invitadas.length > MAX_USUARIAS) throw new Error("Elige a quién retar.");
+  const existen = (await env.DB.prepare(`SELECT nombre FROM usuarias WHERE nombre IN (${invitadas.map(() => "?").join(",")})`).bind(...invitadas).all()).results.map(x => x.nombre);
+  if (existen.length !== invitadas.length) throw new Error("Alguna de esas personas no existe.");
+  const preguntas = (Array.isArray(d.preguntas) ? d.preguntas : []).map(h => String(h).slice(0, 16));
+  if (!preguntas.length || preguntas.length > 200) throw new Error("Reto sin preguntas.");
+  const c = d.config || {};
+  const config = { temas: Array.isArray(c.temas) ? c.temas.map(Number) : null, n: Number(c.n), reserva: Number(c.reserva) || 0, maximo: Number(c.maximo), minimo: Number(c.minimo) };
+  const id = crypto.randomUUID().replace(/-/g, "").slice(0, 10);
+  const ahora = Date.now();
+  await env.DB.batch([
+    env.DB.prepare("INSERT INTO retos (id, creadora, tipo, config, preguntas, minutos, estado, creado) VALUES (?, ?, ?, ?, ?, ?, 'esperando', ?)")
+      .bind(id, nombre, d.tipo === "simulacro" ? "simulacro" : "test", JSON.stringify(config), JSON.stringify(preguntas), Math.max(1, Number(d.minutos) || 1), ahora),
+    env.DB.prepare("INSERT INTO reto_part (reto, nombre, estado, orden) VALUES (?, ?, 'aceptada', 0)").bind(id, nombre),
+    ...invitadas.map((n, i) => env.DB.prepare("INSERT INTO reto_part (reto, nombre, estado, orden) VALUES (?, ?, 'invitada', ?)").bind(id, n, i + 1)),
+  ]);
+  return { ok: true, reto: await leerReto(env, id) };
+}
+async function misRetos(env, nombre) {
+  const desde = Date.now() - CADUCA_ESPERA_MS - 24 * 60 * 60 * 1000;
+  const ids = (await env.DB.prepare(`SELECT r.id FROM retos r JOIN reto_part p ON p.reto = r.id
+      WHERE p.nombre = ? AND p.estado IN ('invitada', 'aceptada') AND r.estado IN ('esperando', 'en_curso') AND r.creado > ? ORDER BY r.creado DESC`)
+    .bind(nombre, desde).all()).results.map(x => x.id);
+  const retos = [];
+  for (const id of ids) {
+    const r = await leerReto(env, id);
+    const yo = r.participantes.find(p => p.nombre === nombre);
+    if ((r.estado === "esperando") || (r.estado === "en_curso" && yo.estado === "aceptada" && !yo.terminado)) retos.push(r);
+  }
+  return { ok: true, retos };
+}
+async function responderReto(env, nombre, id, acepta) {
+  const r = await leerReto(env, id); const yo = soyParte(r, nombre);
+  if (r.estado !== "esperando") throw new Error("Ese reto ya no admite respuestas.");
+  if (yo.estado === "invitada") await env.DB.prepare("UPDATE reto_part SET estado = ? WHERE reto = ? AND nombre = ?").bind(acepta ? "aceptada" : "rechazada", r.id, nombre).run();
+  return { ok: true, reto: await leerReto(env, r.id) };
+}
+async function empezarReto(env, nombre, id) {
+  const r = await leerReto(env, id);
+  if (r.creadora !== nombre) throw new Error("Solo puede empezarlo quien lo ha creado.");
+  if (r.estado !== "esperando") throw new Error("Ese reto ya no se puede empezar.");
+  if (r.participantes.filter(p => p.estado === "aceptada").length < 2) throw new Error("Hace falta que acepte al menos una.");
+  await env.DB.batch([
+    env.DB.prepare("UPDATE retos SET estado = 'en_curso', inicio = ? WHERE id = ? AND estado = 'esperando'").bind(Date.now() + 5000, r.id),
+    env.DB.prepare("UPDATE reto_part SET estado = 'sin_respuesta' WHERE reto = ? AND estado = 'invitada'").bind(r.id),
+  ]);
+  return { ok: true, reto: await leerReto(env, r.id) };
+}
+async function cancelarReto(env, nombre, id) {
+  const r = await leerReto(env, id);
+  if (r.creadora !== nombre) throw new Error("Solo puede cancelarlo quien lo ha creado.");
+  await env.DB.prepare("UPDATE retos SET estado = 'cancelado' WHERE id = ? AND estado = 'esperando'").bind(r.id).run();
+  return { ok: true };
+}
+async function pulso(env, nombre, id, respondidas) {
+  const r = await leerReto(env, id); const yo = soyParte(r, nombre);
+  if (typeof respondidas === "number" && yo.estado === "aceptada" && !yo.terminado && r.estado === "en_curso")
+    await env.DB.prepare("UPDATE reto_part SET respondidas = ? WHERE reto = ? AND nombre = ?").bind(Math.max(0, Math.min(500, respondidas | 0)), r.id, nombre).run();
+  return { ok: true, reto: await leerReto(env, r.id) };
+}
+async function terminarReto(env, nombre, id, x) {
+  const r = await leerReto(env, id); soyParte(r, nombre);
+  if (!x || typeof x.nota !== "number") throw new Error("Resultado no válido.");
+  await env.DB.prepare(`UPDATE reto_part SET terminado = 1, nota = ?, maximo = ?, a = ?, e = ?, b = ?, fin = ?, respondidas = ?
+      WHERE reto = ? AND nombre = ? AND terminado = 0`)
+    .bind(x.nota, Number(x.maximo) || 0, x.a | 0, x.e | 0, x.b | 0, Number(x.fin) || Date.now(), x.respondidas | 0, r.id, nombre).run();
+  return { ok: true, reto: await leerReto(env, r.id) };
 }

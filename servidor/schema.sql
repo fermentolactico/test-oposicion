@@ -29,3 +29,27 @@ CREATE TABLE IF NOT EXISTS fallos (     -- intentos de PIN fallidos seguidos
 );
 INSERT OR IGNORE INTO usuarias (nombre, pin, alta) VALUES
   ('Ana', '', unixepoch() * 1000), ('Carmen', '', unixepoch() * 1000), ('Georgina', '', unixepoch() * 1000);
+
+-- Retos en grupo: varias hacen a la vez el mismo test y ven el avance de las demás
+CREATE TABLE IF NOT EXISTS retos (
+  id        TEXT PRIMARY KEY,
+  creadora  TEXT NOT NULL,
+  tipo      TEXT NOT NULL,              -- 'simulacro' o 'test'
+  config    TEXT NOT NULL,              -- JSON: temas, n, reserva, maximo, minimo
+  preguntas TEXT NOT NULL,              -- JSON: identificadores cortos, en orden
+  minutos   INTEGER NOT NULL,
+  estado    TEXT NOT NULL,              -- esperando · en_curso · cancelado
+  creado    INTEGER NOT NULL,
+  inicio    INTEGER                     -- ms; lo fija la creadora al empezar (con 5 s de cuenta atrás)
+);
+CREATE TABLE IF NOT EXISTS reto_part (
+  reto        TEXT NOT NULL,
+  nombre      TEXT NOT NULL,
+  estado      TEXT NOT NULL,            -- invitada · aceptada · rechazada · sin_respuesta
+  respondidas INTEGER NOT NULL DEFAULT 0,
+  terminado   INTEGER NOT NULL DEFAULT 0,
+  nota REAL, maximo REAL, a INTEGER, e INTEGER, b INTEGER, fin INTEGER,
+  orden       INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (reto, nombre)
+);
+CREATE INDEX IF NOT EXISTS reto_part_nombre ON reto_part (nombre);
