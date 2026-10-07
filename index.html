@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Test de oposición</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%278%27 fill=%27%231f6f6b%27/%3E%3Cpath d=%27M9 17l4.5 4.5L23 11%27 stroke=%27white%27 stroke-width=%273.2%27 fill=%27none%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f3ee; --surface:#fffdf9; --surface-2:#f0ebe3; --ink:#1f2a2e; --muted:#5f6b6f; --line:#e2dbd0;
+  --accent:#1f6f6b; --accent-ink:#ffffff; --accent-soft:#dcece9;
+  --ok:#2e7d4f; --ok-soft:#e1f1e6; --bad:#b4483c; --bad-soft:#f7e3df; --warn:#a86a12;
+  --radius:16px; --shadow:0 1px 2px rgba(31,42,46,.06),0 6px 24px rgba(31,42,46,.06);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#141a1c; --surface:#1c2427; --surface-2:#232d31; --ink:#e9eeec; --muted:#9aa8a6; --line:#2e3a3e;
+    --accent:#5cbdb4; --accent-ink:#0f1a1a; --accent-soft:#1f3634;
+    --ok:#6cc792; --ok-soft:#1d3327; --bad:#ec8d80; --bad-soft:#3a2321; --warn:#e3a94d;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 24px rgba(0,0,0,.25);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141a1c; --surface:#1c2427; --surface-2:#232d31; --ink:#e9eeec; --muted:#9aa8a6; --line:#2e3a3e;
+  --accent:#5cbdb4; --accent-ink:#0f1a1a; --accent-soft:#1f3634;
+  --ok:#6cc792; --ok-soft:#1d3327; --bad:#ec8d80; --bad-soft:#3a2321; --warn:#e3a94d;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 24px rgba(0,0,0,.25);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,-apple-system,sans-serif}
+h1,h2,h3{font-family:Fraunces,Georgia,serif;font-weight:650;letter-spacing:-.01em;margin:0}
+button{font:inherit;cursor:pointer}
+.wrap{max-width:820px;margin:0 auto;padding:24px 16px 96px}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:28px}
+.brand{display:flex;align-items:center;gap:10px;color:inherit;text-decoration:none;background:none;border:0;padding:0}
+.brand .logo{width:34px;height:34px;border-radius:10px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-family:Fraunces,serif;font-weight:650}
+.brand b{font-family:Fraunces,serif;font-size:1.15rem;font-weight:650}
+.muted{color:var(--muted)}
+.small{font-size:.875rem}
+.hero h1{font-size:clamp(1.8rem,5vw,2.5rem);line-height:1.15;margin-bottom:8px}
+.hero p{margin:0 0 24px;color:var(--muted)}
+.cards{display:grid;gap:16px;grid-template-columns:1fr}
+@media (min-width:640px){.cards{grid-template-columns:1fr 1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px}
+.choice{text-align:left;display:flex;flex-direction:column;gap:10px;color:inherit;transition:transform .15s,border-color .15s}
+.choice:hover{transform:translateY(-2px);border-color:var(--accent)}
+.choice h2{font-size:1.35rem}
+.choice .tag{align-self:flex-start;background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:3px 10px;font-size:.78rem;font-weight:600}
+.facts{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.88rem;color:var(--muted)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;padding:11px 18px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-weight:600}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.section-title{margin:36px 0 12px;font-size:1.1rem}
+.hist{list-style:none;margin:0;padding:0}
+.hist li{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:.92rem}
+.hist li:last-child{border-bottom:0}
+.pill{font-weight:600;border-radius:999px;padding:2px 10px;font-size:.82rem}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.bad{background:var(--bad-soft);color:var(--bad)}
+/* configuración */
+.temas{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px;margin:14px 0 6px}
+.tema{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:8px 4px;text-align:center;color:var(--ink);line-height:1.15}
+.tema b{display:block;font-size:1rem}
+.tema span{font-size:.7rem;color:var(--muted)}
+.tema[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.tema[aria-pressed="true"] span{color:var(--accent-ink);opacity:.85}
+.field{display:flex;flex-direction:column;gap:6px;margin-top:18px}
+.field label{font-weight:600}
+.num{display:flex;align-items:center;gap:8px}
+.num input{width:96px;font:inherit;font-weight:600;text-align:center;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.num button{width:42px;height:42px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:1.2rem}
+/* test */
+.bar{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--line);margin:0 -16px 20px;padding:12px 16px}
+.bar .inner{max-width:820px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.clock{display:inline-flex;align-items:center;gap:6px;font-variant-numeric:tabular-nums;font-weight:600}
+.clock svg{width:16px;height:16px}
+.clock.over{color:var(--bad)}
+.progress{height:4px;border-radius:4px;background:var(--surface-2);overflow:hidden;margin-top:10px}
+.progress i{display:block;height:100%;background:var(--accent);width:0;transition:width .2s}
+.q{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-bottom:14px;box-shadow:var(--shadow)}
+.q .head{display:flex;gap:12px;align-items:flex-start;margin-bottom:12px}
+.q .n{flex:none;min-width:32px;height:32px;padding:0 6px;border-radius:10px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:600;font-size:.9rem}
+.q .stem{font-weight:500}
+.opts{display:grid;gap:8px}
+.opt{display:flex;gap:12px;align-items:flex-start;text-align:left;width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);line-height:1.45}
+.opt:not(:disabled):hover{border-color:var(--accent)}
+.opt .l{flex:none;width:26px;height:26px;border-radius:8px;border:1px solid var(--line);display:grid;place-items:center;font-weight:600;font-size:.85rem;background:var(--surface-2)}
+.opt[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.opt[aria-pressed="true"] .l{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.opt.good{border-color:var(--ok);background:var(--ok-soft)}
+.opt.good .l{background:var(--ok);border-color:var(--ok);color:#fff}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.opt.wrong .l{background:var(--bad);border-color:var(--bad);color:#fff}
+.opt:disabled{cursor:default}
+.q.res-ok{border-left:5px solid var(--ok)}
+.q.res-bad{border-left:5px solid var(--bad)}
+.q.res-blank{border-left:5px solid var(--line)}
+.meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;font-size:.78rem;color:var(--muted)}
+.reserva-sep{display:flex;align-items:center;gap:12px;margin:28px 0 14px;color:var(--muted);font-weight:600;font-size:.9rem}
+.reserva-sep:before,.reserva-sep:after{content:"";flex:1;height:1px;background:var(--line)}
+/* resultado */
+.score{display:grid;gap:18px;grid-template-columns:1fr}
+@media (min-width:640px){.score{grid-template-columns:auto 1fr;align-items:center}}
+.ring{width:150px;height:150px;border-radius:50%;display:grid;place-items:center;margin:0 auto;background:conic-gradient(var(--c) calc(var(--p)*1%),var(--surface-2) 0)}
+.ring>div{width:118px;height:118px;border-radius:50%;background:var(--surface);display:grid;place-items:center;text-align:center}
+.ring b{font-family:Fraunces,serif;font-size:2rem;line-height:1}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{background:var(--surface-2);border-radius:12px;padding:10px;text-align:center}
+.stat b{display:block;font-size:1.3rem}
+.bytema{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;margin-top:10px}
+.bytema div{background:var(--surface-2);border-radius:10px;padding:6px 8px;font-size:.82rem;display:flex;justify-content:space-between}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin:24px 0 14px}
+.filters button{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 14px;font-size:.88rem}
+.filters button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.notice{background:var(--accent-soft);color:var(--ink);border-radius:12px;padding:10px 14px;font-size:.9rem;margin:12px 0}
+.center{text-align:center}
+.hidden{display:none!important}
+@media (max-width:520px){header.top{margin-bottom:18px}.bar{padding:10px 16px;margin-bottom:14px}.bar .inner{gap:8px}.q{padding:14px}.q .head{gap:10px}.hero h1{margin-bottom:4px}}
+footer{margin-top:48px;font-size:.8rem;color:var(--muted);text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <header class="top">
+    <button class="brand" id="home" aria-label="Inicio"><span class="logo">A2</span><b>Test de oposición</b></button>
+    <span class="muted small" id="banco"></span>
+  </header>
+  <main id="view"><p class="muted">Cargando preguntas…</p></main>
+  <footer id="pie"></footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js"></script>
+<script>
+"use strict";
+let DATA = null;
+const view = document.getElementById("view");
+const K = { actual: "oposicion.actual", historial: "oposicion.historial", usadas: "oposicion.usadas" };
+
+// ---------- almacenamiento del navegador (puede fallar: modo privado) ----------
+function leer(k, def) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : def; } catch { return def; } }
+function guardar(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+function borrar(k) { try { localStorage.removeItem(k); } catch {} }
+
+// ---------- utilidades ----------
+const el = (tag, attrs = {}, ...hijos) => {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") e.className = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else if (v !== null && v !== undefined && v !== false) e.setAttribute(k, v === true ? "" : v);
+  }
+  for (const h of hijos.flat(Infinity)) if (h !== null && h !== undefined && h !== false) e.append(h instanceof Node ? h : document.createTextNode(String(h)));
+  return e;
+};
+function icono(trazos) {   // SVG de línea, hereda el color del texto
+  const s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  s.setAttribute("viewBox", "0 0 24 24"); s.setAttribute("fill", "none"); s.setAttribute("stroke", "currentColor");
+  s.setAttribute("stroke-width", "2"); s.setAttribute("stroke-linecap", "round"); s.setAttribute("aria-hidden", "true");
+  s.innerHTML = trazos; return s;
+}
+const coma = (x, d = 2) => x.toFixed(d).replace(".", ",");
+const barajar = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const fecha = ms => new Date(ms).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" }) + " · " + new Date(ms).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+const reloj = s => { const m = Math.floor(Math.abs(s) / 60), ss = Math.abs(s) % 60; return (s < 0 ? "−" : "") + (m >= 60 ? Math.floor(m / 60) + ":" + String(m % 60).padStart(2, "0") : m) + ":" + String(ss).padStart(2, "0"); };
+const temasTxt = ts => !ts ? "Todo el temario (11-70)" : (ts.length === 1 ? "Tema " : "Temas ") + rangos(ts);
+function rangos(ts) {
+  const s = [...ts].sort((a, b) => a - b), out = [];
+  for (let i = 0; i < s.length; i++) { let j = i; while (j + 1 < s.length && s[j + 1] === s[j] + 1) j++; out.push(j > i + 1 ? s[i] + "-" + s[j] : j === i + 1 ? s[i] + ", " + s[j] : String(s[i])); i = j; }
+  return out.join(", ");
+}
+
+// ---------- elegir preguntas: las mismas reglas que examen.py del tutor ----------
+// Simulacro: dentro de cada tema, primero las oficiales repetidas por el tribunal, luego el resto de
+// oficiales, las de academia y las generadas; cada tema sale tanto como en los exámenes oficiales (+1).
+// Test de estudio: al azar y por turnos entre los temas elegidos.
+function elegir(temas, cuantas, simulacro, excluir) {
+  const porTema = {};
+  DATA.preguntas.forEach((p, i) => {
+    if (excluir && excluir.has(p.id)) return;
+    if (temas && !temas.includes(p.t)) return;
+    (porTema[p.t] ||= []).push(i);
+  });
+  for (const t in porTema) {
+    barajar(porTema[t]);
+    if (simulacro) porTema[t].sort((a, b) => {
+      const A = DATA.preguntas[a], B = DATA.preguntas[b];
+      return (B.r - A.r) || (B.of - A.of) || (A.g - B.g);
+    });
+  }
+  const elegidas = [];
+  while (elegidas.length < cuantas) {
+    const ts = Object.keys(porTema).filter(t => porTema[t].length);
+    if (!ts.length) break;
+    if (simulacro) {
+      const w = ts.map(t => (DATA.pesos[t] || 0) + 1), tot = w.reduce((a, b) => a + b, 0);
+      let x = Math.random() * tot, k = 0;
+      while (x >= w[k]) x -= w[k++];
+      elegidas.push(porTema[ts[k]].shift());
+    } else {
+      for (const t of barajar(ts)) if (elegidas.length < cuantas) elegidas.push(porTema[t].shift());
+    }
+  }
+  return elegidas;
+}
+
+function crear(tipo, temas, n) {
+  const R = DATA.reglas, sim = tipo === "simulacro";
+  let reserva = 0, aviso = "";
+  if (sim) { n = R.preguntas; reserva = R.reserva; temas = null; }
+  let usadas = new Set(sim ? leer(K.usadas, []) : []);
+  let elegidas = elegir(temas, n + reserva, sim, usadas);
+  if (sim && elegidas.length < n + reserva) {          // ya se han usado casi todas: se empieza de cero
+    borrar(K.usadas); usadas = new Set();
+    elegidas = elegir(temas, n + reserva, sim, usadas);
+    aviso = "Ya habías hecho simulacros con casi todo el banco: las preguntas vuelven a empezar.";
+  }
+  if (!elegidas.length) return null;
+  if (elegidas.length < n + reserva) { aviso = `Solo hay ${elegidas.length} preguntas de esos temas (pediste ${n}).`; n = elegidas.length; }
+  const principales = elegidas.slice(0, n).sort((a, b) => DATA.preguntas[a].t - DATA.preguntas[b].t);
+  const maximo = sim ? R.maximo : 10, minimo = sim ? R.minimo : 5;
+  const ex = {
+    tipo, temas, n, reserva, maximo, minimo, aviso,
+    minutos: sim ? R.minutos : Math.max(1, Math.round(R.minutos * n / (R.preguntas + R.reserva))),
+    preguntas: principales.concat(elegidas.slice(n)), marcas: {}, inicio: Date.now(), corregido: null,
+  };
+  if (sim) guardar(K.usadas, [...usadas, ...ex.preguntas.map(i => DATA.preguntas[i].id)]);
+  return ex;
+}
+
+// Un acierto vale máximo/n; un error resta la cuarta parte de un acierto; en blanco, 0 (BOIB 72/2026, 9.2.2.b).
+// Las de reserva no puntúan.
+function puntuar(ex) {
+  const acierto = ex.maximo / ex.n, error = -acierto / 4;
+  let a = 0, e = 0, b = 0; const porTema = {}, reserva = [0, 0];
+  ex.preguntas.forEach((qi, k) => {
+    const p = DATA.preguntas[qi], m = ex.marcas[k], bien = m === p.c;
+    if (k >= ex.n) { reserva[1]++; if (bien) reserva[0]++; return; }
+    const t = (porTema[p.t] ||= [0, 0]); t[1]++;
+    if (m === undefined) b++; else if (bien) { a++; t[0]++; } else e++;
+  });
+  const nota = Math.round(Math.max(0, a * acierto + e * error) * 100) / 100;
+  return { a, e, b, nota, aprobado: nota >= ex.minimo, porTema, reserva, fin: Date.now() };
+}
+
+// ---------- vistas ----------
+function pintar(...hijos) { view.replaceChildren(...hijos.flat(Infinity).filter(h => h !== null && h !== undefined && h !== false)); window.scrollTo(0, 0); }
+
+function inicio() {
+  pararReloj();
+  const actual = leer(K.actual, null);
+  const R = DATA.reglas;
+  const hist = leer(K.historial, []);
+  pintar(
+    el("section", { class: "hero" },
+      el("h1", {}, "Practica como en el examen"),
+      el("p", {}, "Elige un simulacro completo o un test de estudio con los temas que quieras.")),
+    actual && !actual.corregido ? el("div", { class: "card", style: "margin-bottom:16px" },
+      el("div", { class: "row", style: "justify-content:space-between" },
+        el("div", {}, el("b", {}, "Tienes un " + (actual.tipo === "simulacro" ? "simulacro" : "test") + " sin terminar"),
+          el("div", { class: "muted small" }, `${Object.keys(actual.marcas).length} de ${actual.n + actual.reserva} respondidas`)),
+        el("div", { class: "row" },
+          el("button", { class: "btn", onclick: () => { borrar(K.actual); inicio(); } }, "Descartar"),
+          el("button", { class: "btn primary", onclick: () => test(actual) }, "Continuar")))) : null,
+    el("div", { class: "cards" },
+      el("button", { class: "card choice", onclick: () => test(crear("simulacro")) },
+        el("span", { class: "tag" }, "Como el examen real"),
+        el("h2", {}, "Simulacro de examen"),
+        el("div", { class: "facts" }, el("span", {}, `${R.preguntas} preguntas + ${R.reserva} de reserva`), el("span", {}, `${R.minutos} minutos`), el("span", {}, `Nota sobre ${R.maximo}`)),
+        el("p", { class: "muted small", style: "margin:0" }, "Temas repartidos como los reparte el tribunal, con prioridad para las preguntas que ha repetido.")),
+      el("button", { class: "card choice", onclick: configurar },
+        el("span", { class: "tag" }, "A tu medida"),
+        el("h2", {}, "Test de estudio"),
+        el("div", { class: "facts" }, el("span", {}, "Los temas que elijas"), el("span", {}, "Las preguntas que quieras"), el("span", {}, "Nota sobre 10")),
+        el("p", { class: "muted small", style: "margin:0" }, "Preguntas al azar del banco, repartidas entre los temas elegidos."))),
+    hist.length ? el("h3", { class: "section-title" }, "Tus últimos resultados") : null,
+    hist.length ? el("div", { class: "card" }, el("ul", { class: "hist" },
+      hist.slice(0, 12).map(h => el("li", {},
+        el("span", {}, el("b", {}, h.tipo === "simulacro" ? "Simulacro" : "Test"), " ", el("span", { class: "muted" }, "· " + h.desc + " · " + fecha(h.fin))),
+        el("span", { class: "pill " + (h.aprobado ? "ok" : "bad") }, coma(h.nota) + " / " + h.maximo))))) : null,
+    hist.length ? el("p", { class: "muted small" }, "Los resultados se guardan solo en este navegador.") : null
+  );
+}
+
+function configurar() {
+  const disp = {};
+  DATA.preguntas.forEach(p => disp[p.t] = (disp[p.t] || 0) + 1);
+  const ts = Object.keys(disp).map(Number).sort((a, b) => a - b);
+  const sel = new Set();
+  const input = el("input", { type: "number", min: "1", value: "20", inputmode: "numeric", "aria-label": "Número de preguntas" });
+  const info = el("p", { class: "muted small" });
+  const empezar = el("button", { class: "btn primary" }, "Empezar test");
+  const actualizar = () => {
+    const max = [...sel].reduce((s, t) => s + disp[t], 0);
+    let n = Math.max(1, parseInt(input.value) || 1);
+    info.textContent = sel.size ? `${sel.size} ${sel.size === 1 ? "tema" : "temas"} · ${max} preguntas disponibles · unos ${Math.max(1, Math.round(DATA.reglas.minutos * Math.min(n, max) / (DATA.reglas.preguntas + DATA.reglas.reserva)))} minutos` : "Elige al menos un tema.";
+    empezar.disabled = !sel.size;
+  };
+  const chips = ts.map(t => {
+    const b = el("button", { class: "tema", "aria-pressed": "false", onclick: () => { sel.has(t) ? sel.delete(t) : sel.add(t); b.setAttribute("aria-pressed", sel.has(t)); actualizar(); } },
+      el("b", {}, t), el("span", {}, disp[t] + " preg."));
+    return b;
+  });
+  const todos = v => () => { ts.forEach((t, i) => { v ? sel.add(t) : sel.delete(t); chips[i].setAttribute("aria-pressed", v); }); actualizar(); };
+  input.addEventListener("input", actualizar);
+  empezar.addEventListener("click", () => {
+    const ex = crear("test", [...sel], Math.max(1, parseInt(input.value) || 20));
+    if (ex) test(ex);
+  });
+  pintar(
+    el("section", { class: "hero" }, el("h1", {}, "Test de estudio"), el("p", {}, "Elige los temas y cuántas preguntas quieres.")),
+    el("div", { class: "card" },
+      el("div", { class: "row", style: "justify-content:space-between" },
+        el("b", {}, "Temas"),
+        el("div", { class: "row" }, el("button", { class: "btn small", onclick: todos(true) }, "Todos"), el("button", { class: "btn small", onclick: todos(false) }, "Ninguno"))),
+      el("div", { class: "temas" }, chips),
+      el("div", { class: "field" },
+        el("label", {}, "Número de preguntas"),
+        el("div", { class: "num" },
+          el("button", { "aria-label": "Menos", onclick: () => { input.value = Math.max(1, (parseInt(input.value) || 20) - 5); actualizar(); } }, "−"),
+          input,
+          el("button", { "aria-label": "Más", onclick: () => { input.value = (parseInt(input.value) || 20) + 5; actualizar(); } }, "+"))),
+      info,
+      el("div", { class: "row", style: "margin-top:8px" }, empezar, el("button", { class: "btn", onclick: inicio }, "Volver")))
+  );
+  actualizar();
+}
+
+let tic = null;
+function pararReloj() { if (tic) clearInterval(tic); tic = null; }
+
+function test(ex) {
+  if (!ex) return;
+  guardar(K.actual, ex);
+  pararReloj();
+  const total = ex.n + ex.reserva;
+  const tiempo = el("span");
+  const clock = el("span", { class: "clock", title: "Tiempo restante" }, icono('<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/>'), tiempo);
+  const cont = el("span", { class: "muted small" });
+  const barra = el("i");
+  const actualizarCabecera = () => {
+    const quedan = Math.round(ex.minutos * 60 - (Date.now() - ex.inicio) / 1000);
+    tiempo.textContent = reloj(quedan);
+    clock.classList.toggle("over", quedan < 0);
+    const r = Object.keys(ex.marcas).length;
+    cont.textContent = `${r} de ${total} respondidas`;
+    barra.style.width = (100 * r / total) + "%";
+  };
+  const tarjetas = ex.preguntas.map((qi, k) => {
+    const p = DATA.preguntas[qi];
+    const botones = p.o.map((txt, j) => el("button", {
+      class: "opt", "aria-pressed": ex.marcas[k] === j ? "true" : "false",
+      onclick: () => {
+        if (ex.marcas[k] === j) delete ex.marcas[k]; else ex.marcas[k] = j;   // pulsar otra vez la deja en blanco
+        botones.forEach((b, i) => b.setAttribute("aria-pressed", ex.marcas[k] === i));
+        guardar(K.actual, ex); actualizarCabecera();
+      }
+    }, el("span", { class: "l" }, "abcd"[j]), el("span", {}, txt)));
+    return [
+      k === ex.n && ex.reserva ? el("div", { class: "reserva-sep" }, `Preguntas de reserva (${ex.n + 1}-${total})`) : null,
+      el("article", { class: "q" }, el("div", { class: "head" }, el("span", { class: "n" }, k + 1), el("div", { class: "stem" }, p.e)), el("div", { class: "opts" }, botones))
+    ];
+  });
+  const corregir = () => {
+    const sinResponder = ex.n - Object.keys(ex.marcas).filter(k => k < ex.n).length;
+    if (sinResponder > 0 && !confirmar.dataset.ok) {
+      confirmar.textContent = `Te quedan ${sinResponder} en blanco. Pulsa otra vez para corregir.`;
+      confirmar.dataset.ok = "1"; return;
+    }
+    ex.corregido = puntuar(ex);
+    guardar(K.actual, ex);
+    const hist = leer(K.historial, []);
+    hist.unshift({ tipo: ex.tipo, desc: ex.tipo === "simulacro" ? "100 preguntas" : `${temasTxt(ex.temas)} · ${ex.n} preg.`, nota: ex.corregido.nota, maximo: ex.maximo, aprobado: ex.corregido.aprobado, fin: ex.corregido.fin });
+    guardar(K.historial, hist.slice(0, 50));
+    resultado(ex);
+  };
+  const confirmar = el("p", { class: "muted small center" });
+  pintar(
+    el("div", { class: "bar" }, el("div", { class: "inner" },
+      el("div", {}, el("b", {}, ex.tipo === "simulacro" ? "Simulacro de examen" : "Test de estudio"), " ", cont),
+      el("div", { class: "row" }, clock,
+        el("button", { class: "btn primary small", onclick: corregir }, "Corregir"))),
+      el("div", { class: "progress" }, barra)),
+    ex.aviso ? el("div", { class: "notice" }, ex.aviso) : null,
+    el("p", { class: "muted small" }, `${temasTxt(ex.temas)} · ${ex.n} preguntas${ex.reserva ? ` + ${ex.reserva} de reserva` : ""} · ${ex.minutos} minutos. Acierto ${coma(ex.maximo / ex.n, 3)}; un error resta la cuarta parte; en blanco, 0. Pulsa otra vez una opción para dejarla en blanco.`),
+    el("div", { class: "row", style: "margin-bottom:18px" },
+      el("button", { class: "btn small", onclick: () => pdfTest(ex) }, "Descargar test"),
+      el("button", { class: "btn small", onclick: () => pdfRespuestas(ex) }, "Descargar respuestas")),
+    tarjetas,
+    el("div", { class: "center", style: "margin-top:24px" }, el("button", { class: "btn primary", onclick: corregir }, "Corregir"), confirmar)
+  );
+  actualizarCabecera();
+  tic = setInterval(actualizarCabecera, 1000);
+}
+
+function resultado(ex) {
+  pararReloj();
+  const r = ex.corregido, total = ex.n + ex.reserva;
+  const color = r.aprobado ? "var(--ok)" : "var(--bad)";
+  const tarjetas = ex.preguntas.map((qi, k) => {
+    const p = DATA.preguntas[qi], m = ex.marcas[k];
+    const estado = m === undefined ? "blank" : m === p.c ? "ok" : "bad";
+    const art = el("article", { class: "q res-" + estado, "data-estado": estado, "data-reserva": k >= ex.n ? "1" : "" },
+      el("div", { class: "head" }, el("span", { class: "n" }, k + 1), el("div", { class: "stem" }, p.e)),
+      el("div", { class: "opts" }, p.o.map((txt, j) => el("button", {
+        class: "opt" + (j === p.c ? " good" : j === m ? " wrong" : ""), disabled: true
+      }, el("span", { class: "l" }, "abcd"[j]), el("span", {}, txt)))),
+      el("div", { class: "meta" }, el("span", {}, "Tema " + p.t), p.of ? el("span", {}, "· Examen oficial") : null,
+        m === undefined ? el("span", {}, "· En blanco") : null, k >= ex.n ? el("span", {}, "· Reserva (no puntúa)") : null));
+    return [k === ex.n && ex.reserva ? el("div", { class: "reserva-sep" }, `Preguntas de reserva (${ex.n + 1}-${total})`) : null, art];
+  });
+  const lista = el("div", {}, tarjetas);
+  const filtro = modo => () => {
+    filtros.forEach(b => b.setAttribute("aria-pressed", b.dataset.m === modo));
+    lista.querySelectorAll(".q").forEach(q => q.classList.toggle("hidden", modo !== "todas" && q.dataset.estado !== modo));
+    lista.querySelectorAll(".reserva-sep").forEach(s => s.classList.toggle("hidden", modo !== "todas"));
+  };
+  const filtros = [["todas", "Todas"], ["bad", `Falladas (${r.e})`], ["blank", `En blanco (${r.b})`], ["ok", `Acertadas (${r.a})`]]
+    .map(([m, t]) => el("button", { "data-m": m, "aria-pressed": m === "todas" ? "true" : "false" }, t));
+  filtros.forEach(b => b.addEventListener("click", filtro(b.dataset.m)));
+  pintar(
+    el("section", { class: "hero" }, el("h1", {}, ex.tipo === "simulacro" ? "Resultado del simulacro" : "Resultado del test"),
+      el("p", {}, `${temasTxt(ex.temas)} · ${fecha(r.fin)}`)),
+    el("div", { class: "card score" },
+      el("div", { class: "ring", style: `--p:${Math.round(100 * r.nota / ex.maximo)};--c:${color}` },
+        el("div", {}, el("div", {}, el("b", {}, coma(r.nota)), el("div", { class: "muted small" }, "sobre " + ex.maximo)))),
+      el("div", {},
+        el("p", { style: "margin:0 0 12px" }, el("span", { class: "pill " + (r.aprobado ? "ok" : "bad") }, r.aprobado ? "Superado" : "No superado"),
+          el("span", { class: "muted small" }, `  se supera con ${ex.minimo}`)),
+        el("div", { class: "stats" },
+          el("div", { class: "stat" }, el("b", { style: "color:var(--ok)" }, r.a), el("span", { class: "small muted" }, "aciertos")),
+          el("div", { class: "stat" }, el("b", { style: "color:var(--bad)" }, r.e), el("span", { class: "small muted" }, "errores")),
+          el("div", { class: "stat" }, el("b", {}, r.b), el("span", { class: "small muted" }, "en blanco"))),
+        r.reserva[1] ? el("p", { class: "muted small", style: "margin:10px 0 0" }, `Reserva (no puntúa): ${r.reserva[0]} de ${r.reserva[1]}`) : null)),
+    el("div", { class: "row", style: "margin:16px 0" },
+      el("button", { class: "btn", onclick: () => pdfTest(ex) }, "Descargar test"),
+      el("button", { class: "btn", onclick: () => pdfRespuestas(ex) }, "Descargar respuestas"),
+      el("button", { class: "btn primary", onclick: () => { borrar(K.actual); inicio(); } }, "Nuevo test")),
+    el("h3", { class: "section-title" }, "Por tema"),
+    el("div", { class: "bytema" }, Object.entries(r.porTema).sort((a, b) => a[0] - b[0]).map(([t, v]) =>
+      el("div", {}, el("span", {}, "T" + t), el("b", { style: `color:${v[0] === v[1] ? "var(--ok)" : v[0] === 0 ? "var(--bad)" : "var(--ink)"}` }, `${v[0]}/${v[1]}`)))),
+    el("div", { class: "filters" }, filtros),
+    lista
+  );
+}
+
+// ---------- PDF (jsPDF 4.2.1) ----------
+const PDFC = { accent: [31, 111, 107], soft: [220, 236, 233], ink: [31, 42, 46], muted: [95, 107, 111], line: [226, 219, 208], ok: [46, 125, 79], okSoft: [225, 241, 230], bad: [180, 72, 60], badSoft: [247, 227, 223], paper: [255, 253, 249] };
+function nuevoPdf(titulo, sub) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 16;
+  const ctx = { doc, W, H, M, y: 0, titulo };
+  doc.setFillColor(...PDFC.accent); doc.rect(0, 0, W, 30, "F");
+  doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(18); doc.text(titulo, M, 15);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); doc.text(sub, M, 23);
+  ctx.y = 40;
+  return ctx;
+}
+function cerrarPdf(ctx, nombre) {
+  const { doc, W, H, M } = ctx, n = doc.getNumberOfPages();
+  for (let i = 1; i <= n; i++) {
+    doc.setPage(i);
+    doc.setDrawColor(...PDFC.line); doc.setLineWidth(.3); doc.line(M, H - 12, W - M, H - 12);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...PDFC.muted);
+    doc.text(ctx.titulo, M, H - 7); doc.text(`${i} / ${n}`, W - M, H - 7, { align: "right" });
+  }
+  doc.save(nombre);
+}
+const lh = pt => pt * 0.3528 * 1.38;
+function salto(ctx, alto) {
+  if (ctx.y + alto > ctx.H - 18) { ctx.doc.addPage(); ctx.y = 18; return true; }
+  return false;
+}
+function separador(ctx, texto) {
+  const { doc, W, M } = ctx;
+  salto(ctx, 14);
+  doc.setFillColor(...PDFC.soft); doc.roundedRect(M, ctx.y, W - 2 * M, 9, 2, 2, "F");
+  doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(...PDFC.accent);
+  doc.text(texto, M + 4, ctx.y + 6); ctx.y += 14;
+}
+function subtitulo(ex) {
+  return `${temasTxt(ex.temas)} · ${ex.n} preguntas${ex.reserva ? ` + ${ex.reserva} de reserva` : ""} · ${ex.minutos} minutos · ${new Date(ex.inicio).toLocaleDateString("es-ES")}`;
+}
+function nombreFichero(ex, que) {
+  const d = new Date(ex.inicio), f = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}-${String(d.getHours()).padStart(2, "0")}${String(d.getMinutes()).padStart(2, "0")}`;
+  return `${ex.tipo === "simulacro" ? "simulacro" : "test"}-${f}-${que}.pdf`;
+}
+
+function pdfTest(ex) {
+  const ctx = nuevoPdf(ex.tipo === "simulacro" ? "Simulacro de examen" : "Test de estudio", subtitulo(ex));
+  const { doc, W, M } = ctx, ancho = W - 2 * M;
+  doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...PDFC.muted);
+  const instr = doc.splitTextToSize(`Una sola respuesta correcta por pregunta. Acierto: ${coma(ex.maximo / ex.n, 3)} puntos; un error resta la cuarta parte de un acierto; en blanco, 0. Nota de 0 a ${ex.maximo}; se supera con ${ex.minimo}.` + (ex.reserva ? " Las preguntas de reserva se contestan, pero solo cuentan si se anula alguna." : ""), ancho);
+  doc.text(instr, M, ctx.y); ctx.y += instr.length * lh(9) + 6;
+  ex.preguntas.forEach((qi, k) => {
+    const p = DATA.preguntas[qi];
+    if (k === ex.n && ex.reserva) separador(ctx, `Preguntas de reserva (${ex.n + 1}-${ex.n + ex.reserva})`);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(10.5);
+    const stem = doc.splitTextToSize(p.e, ancho - 12);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+    const ops = p.o.map(o => doc.splitTextToSize(o, ancho - 22));
+    const alto = stem.length * lh(10.5) + ops.reduce((s, o) => s + Math.max(o.length * lh(10), 6) + 2.2, 0) + 7;
+    salto(ctx, Math.min(alto, ctx.H - 40));
+    // número
+    doc.setFillColor(...PDFC.accent); doc.roundedRect(M, ctx.y - 4.6, 9, 6.6, 1.6, 1.6, "F");
+    doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(9);
+    doc.text(String(k + 1), M + 4.5, ctx.y, { align: "center" });
+    // enunciado
+    doc.setTextColor(...PDFC.ink); doc.setFontSize(10.5);
+    doc.text(stem, M + 12, ctx.y); ctx.y += stem.length * lh(10.5) + 1.8;
+    // opciones
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+    ops.forEach((o, j) => {
+      const h = Math.max(o.length * lh(10), 6);
+      if (salto(ctx, h + 2)) {}
+      doc.setDrawColor(...PDFC.line); doc.setFillColor(...PDFC.paper); doc.setLineWidth(.3);
+      doc.roundedRect(M + 12, ctx.y - 3.9, 5.6, 5.6, 1.2, 1.2, "FD");
+      doc.setTextColor(...PDFC.accent); doc.setFont("helvetica", "bold"); doc.text("abcd"[j], M + 14.8, ctx.y, { align: "center" });
+      doc.setTextColor(...PDFC.ink); doc.setFont("helvetica", "normal"); doc.text(o, M + 21, ctx.y);
+      ctx.y += h + 2.2;
+    });
+    ctx.y += 4;
+  });
+  cerrarPdf(ctx, nombreFichero(ex, "preguntas"));
+}
+
+function pdfRespuestas(ex) {
+  const r = ex.corregido;
+  const ctx = nuevoPdf("Respuestas · " + (ex.tipo === "simulacro" ? "Simulacro de examen" : "Test de estudio"), subtitulo(ex));
+  const { doc, W, M } = ctx, ancho = W - 2 * M;
+  if (r) {
+    doc.setFillColor(...(r.aprobado ? PDFC.okSoft : PDFC.badSoft)); doc.roundedRect(M, ctx.y, ancho, 18, 3, 3, "F");
+    doc.setTextColor(...(r.aprobado ? PDFC.ok : PDFC.bad)); doc.setFont("helvetica", "bold"); doc.setFontSize(16);
+    doc.text(`${coma(r.nota)} / ${ex.maximo}`, M + 6, ctx.y + 11.5);
+    doc.setFontSize(10); doc.setTextColor(...PDFC.ink); doc.setFont("helvetica", "normal");
+    doc.text(`${r.aprobado ? "Superado" : "No superado"} (se supera con ${ex.minimo})   ·   ${r.a} aciertos · ${r.e} errores · ${r.b} en blanco` + (r.reserva[1] ? `   ·   reserva ${r.reserva[0]}/${r.reserva[1]}` : ""), M + 44, ctx.y + 10.8);
+    ctx.y += 26;
+    doc.setFontSize(8.5); doc.setTextColor(...PDFC.muted);
+    doc.text("En cada casilla: la respuesta correcta y, debajo, la que marcaste. Verde, acierto; rojo, error; gris, en blanco.", M, ctx.y); ctx.y += 7;
+  }
+  const cols = 5, gap = 3, cw = (ancho - gap * (cols - 1)) / cols, ch = r ? 13 : 10;
+  const bloque = (desde, hasta, titulo) => {
+    if (titulo) separador(ctx, titulo);
+    for (let k = desde; k < hasta; k++) {
+      const i = k - desde, col = i % cols;
+      if (col === 0 && i > 0) ctx.y += ch + gap;
+      if (col === 0) salto(ctx, ch + 2);
+      const x = M + col * (cw + gap), p = DATA.preguntas[ex.preguntas[k]], m = ex.marcas[k];
+      const est = !r ? "n" : m === undefined ? "blank" : m === p.c ? "ok" : "bad";
+      doc.setFillColor(...(est === "ok" ? PDFC.okSoft : est === "bad" ? PDFC.badSoft : est === "blank" ? [240, 235, 227] : PDFC.soft));
+      doc.roundedRect(x, ctx.y, cw, ch, 2, 2, "F");
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(...PDFC.muted);
+      doc.text(String(k + 1), x + 3, ctx.y + 5.2);
+      doc.setFontSize(7); doc.text("T" + p.t, x + 3, ctx.y + (r ? 10.5 : 8.3));
+      doc.setFont("helvetica", "bold"); doc.setFontSize(14);
+      doc.setTextColor(...(est === "ok" ? PDFC.ok : est === "bad" ? PDFC.bad : PDFC.accent));
+      doc.text("abcd"[p.c], x + cw - 4, ctx.y + 6.4, { align: "right" });
+      if (r) {
+        doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(...PDFC.muted);
+        doc.text(m === undefined ? "en blanco" : "tú: " + "abcd"[m], x + cw - 4, ctx.y + 10.8, { align: "right" });
+      }
+    }
+    ctx.y += ch + gap + 4;
+  };
+  bloque(0, ex.n, null);
+  if (ex.reserva) bloque(ex.n, ex.n + ex.reserva, `Preguntas de reserva (${ex.n + 1}-${ex.n + ex.reserva}) · no puntúan`);
+  cerrarPdf(ctx, nombreFichero(ex, "respuestas"));
+}
+
+// ---------- arranque ----------
+document.getElementById("home").addEventListener("click", () => { if (DATA) inicio(); });   // un test a medias queda guardado
+fetch("preguntas.json", { cache: "no-cache" }).then(r => r.json()).then(d => {
+  DATA = d;
+  document.getElementById("banco").textContent = `${d.preguntas.length.toLocaleString("es-ES")} preguntas`;
+  document.getElementById("pie").textContent = `Reglas de puntuación: ${d.reglas.cita}.`;
+  const a = leer(K.actual, null);
+  if (a && a.corregido) resultado(a); else inicio();
+}).catch(() => { view.replaceChildren(el("p", {}, "No se han podido cargar las preguntas. Recarga la página.")); });
+</script>
+</body>
+</html>
