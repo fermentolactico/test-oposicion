@@ -1,0 +1,7 @@
+{
+  "name": "pruebas-test-oposicion",
+  "private": true,
+  "description": "Pruebas automáticas de la web con Chrome (puppeteer-core). Usan el perfil «Prueba» (PIN 2468) y lo dejan limpio.",
+  "scripts": { "todas": "sh todas.sh" },
+  "dependencies": { "puppeteer-core": "25.12.0" }
+}

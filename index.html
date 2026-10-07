@@ -341,6 +341,12 @@ function crear(tipo, temas, n) {
   return ex;
 }
 
+// Tiempo empleado frente al del examen: «1:48:10 de 2:30:00» o «2:35:23, 5:23 de más»
+function tiempoTxt(ex) {
+  const usado = Math.round((ex.corregido.fin - ex.inicio) / 1000), limite = ex.minutos * 60;
+  return usado > limite ? `${reloj(usado)}, ${reloj(usado - limite)} de más` : `${reloj(usado)} de ${reloj(limite)}`;
+}
+
 // Un acierto vale máximo/n; un error resta la cuarta parte de un acierto; en blanco, 0 (BOIB 72/2026, 9.2.2.b).
 // Las de reserva no puntúan.
 function puntuar(ex) {
@@ -420,12 +426,12 @@ function configurar() {
   const sel = new Set();
   const input = el("input", { type: "number", min: "1", value: "20", inputmode: "numeric", "aria-label": "Número de preguntas" });
   const info = el("p", { class: "muted small" });
-  const empezar = el("button", { class: "btn primary" }, "Empezar test");
+  const botonEmpezar = el("button", { class: "btn primary" }, "Empezar test");
   const actualizar = () => {
     const max = [...sel].reduce((s, t) => s + disp[t], 0);
     let n = Math.max(1, parseInt(input.value) || 1);
     info.textContent = sel.size ? `${sel.size} ${sel.size === 1 ? "tema" : "temas"} · ${max} preguntas disponibles · unos ${Math.max(1, Math.round(DATA.reglas.minutos * Math.min(n, max) / (DATA.reglas.preguntas + DATA.reglas.reserva)))} minutos` : "Elige al menos un tema.";
-    empezar.disabled = !sel.size;
+    botonEmpezar.disabled = !sel.size;
   };
   const chips = ts.map(t => {
     const b = el("button", { class: "tema", "aria-pressed": "false", onclick: () => { sel.has(t) ? sel.delete(t) : sel.add(t); b.setAttribute("aria-pressed", sel.has(t)); actualizar(); } },
@@ -434,7 +440,7 @@ function configurar() {
   });
   const todos = v => () => { ts.forEach((t, i) => { v ? sel.add(t) : sel.delete(t); chips[i].setAttribute("aria-pressed", v); }); actualizar(); };
   input.addEventListener("input", actualizar);
-  empezar.addEventListener("click", () => {
+  botonEmpezar.addEventListener("click", () => {
     empezar(() => crear("test", [...sel], Math.max(1, parseInt(input.value) || 20)));
   });
   pintar(
@@ -451,7 +457,7 @@ function configurar() {
           input,
           el("button", { "aria-label": "Más", onclick: () => { input.value = (parseInt(input.value) || 20) + 5; actualizar(); } }, "+"))),
       info,
-      el("div", { class: "row", style: "margin-top:8px" }, empezar, el("button", { class: "btn", onclick: inicio }, "Volver")))
+      el("div", { class: "row", style: "margin-top:8px" }, botonEmpezar, el("button", { class: "btn", onclick: inicio }, "Volver")))
   );
   actualizar();
 }
@@ -486,7 +492,7 @@ function test(ex) {
   const barra = el("i");
   const actualizarCabecera = () => {
     const quedan = Math.round(ex.minutos * 60 - (Date.now() - ex.inicio) / 1000);
-    tiempo.textContent = reloj(quedan);
+    tiempo.textContent = quedan < 0 ? "+" + reloj(-quedan) + " de más" : reloj(quedan);   // no se corrige solo: cuenta lo que se pasa
     clock.classList.toggle("over", quedan < 0);
     const r = Object.keys(ex.marcas).length;
     cont.textContent = `${r} de ${total} respondidas`;
@@ -588,7 +594,9 @@ function resultado(ex) {
           el("div", { class: "stat" }, el("b", { style: "color:var(--ok)" }, r.a), el("span", { class: "small muted" }, "aciertos")),
           el("div", { class: "stat" }, el("b", { style: "color:var(--bad)" }, r.e), el("span", { class: "small muted" }, "errores")),
           el("div", { class: "stat" }, el("b", {}, r.b), el("span", { class: "small muted" }, "en blanco"))),
-        r.reserva[1] ? el("p", { class: "muted small", style: "margin:10px 0 0" }, `Reserva (no puntúa): ${r.reserva[0]} de ${r.reserva[1]}`) : null)),
+        el("p", { class: "small", style: "margin:10px 0 0" }, el("span", { class: "muted" }, "Tiempo: "),
+          el("b", { style: (r.fin - ex.inicio) / 1000 > ex.minutos * 60 ? "color:var(--bad)" : "" }, tiempoTxt(ex))),
+        r.reserva[1] ? el("p", { class: "muted small", style: "margin:6px 0 0" }, `Reserva (no puntúa): ${r.reserva[0]} de ${r.reserva[1]}`) : null)),
     el("div", { class: "row", style: "margin:16px 0" },
       el("button", { class: "btn", onclick: () => pdfTest(ex) }, "Descargar test"),
       el("button", { class: "btn", onclick: () => pdfRespuestas(ex) }, "Descargar respuestas"),
@@ -692,7 +700,10 @@ function pdfRespuestas(ex) {
     doc.text(`${coma(r.nota)} / ${ex.maximo}`, M + 6, ctx.y + 11.5);
     doc.setFontSize(10); doc.setTextColor(...PDFC.ink); doc.setFont("helvetica", "normal");
     doc.text(`${r.aprobado ? "Superado" : "No superado"} (se supera con ${ex.minimo})   ·   ${r.a} aciertos · ${r.e} errores · ${r.b} en blanco` + (r.reserva[1] ? `   ·   reserva ${r.reserva[0]}/${r.reserva[1]}` : ""), M + 44, ctx.y + 10.8);
-    ctx.y += 26;
+    ctx.y += 24;
+    const pasado = (r.fin - ex.inicio) / 1000 > ex.minutos * 60;
+    doc.setFontSize(9.5); doc.setTextColor(...(pasado ? PDFC.bad : PDFC.ink));
+    doc.text("Tiempo: " + tiempoTxt(ex), M, ctx.y); ctx.y += 6;
     doc.setFontSize(8.5); doc.setTextColor(...PDFC.muted);
     doc.text("En cada casilla: la respuesta correcta y, debajo, la que marcaste. Verde, acierto; rojo, error; gris, en blanco.", M, ctx.y); ctx.y += 7;
   }
