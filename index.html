@@ -60,9 +60,10 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
 .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .section-title{margin:36px 0 12px;font-size:1.1rem}
 .hist{list-style:none;margin:0;padding:0}
-.hist li{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:.92rem}
+.hist li{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:.92rem}
+.hist li>span:first-child{min-width:0}
 .hist li:last-child{border-bottom:0}
-.pill{font-weight:600;border-radius:999px;padding:2px 10px;font-size:.82rem}
+.pill{font-weight:600;border-radius:999px;padding:2px 10px;font-size:.82rem;white-space:nowrap}
 .pill.ok{background:var(--ok-soft);color:var(--ok)}
 .pill.bad{background:var(--bad-soft);color:var(--bad)}
 /* configuración */
@@ -123,7 +124,32 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
 .notice{background:var(--accent-soft);color:var(--ink);border-radius:12px;padding:10px 14px;font-size:.9rem;margin:12px 0}
 .center{text-align:center}
 .hidden{display:none!important}
-@media (max-width:520px){header.top{margin-bottom:18px}.bar{padding:10px 16px;margin-bottom:14px}.bar .inner{gap:8px}.q{padding:14px}.q .head{gap:10px}.hero h1{margin-bottom:4px}}
+@media (max-width:520px){header.top:has(#quien .chip) .brand b{display:none}header.top{margin-bottom:18px}.bar{padding:10px 16px;margin-bottom:14px}.bar .inner{gap:8px}.q{padding:14px}.q .head{gap:10px}.hero h1{margin-bottom:4px}}
+.avatar{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--av);color:#fff;font-weight:600;font-size:.85rem;flex:none}
+.avatar.big{width:64px;height:64px;font-size:1.6rem;font-family:Fraunces,serif}
+.avatar.plus{background:var(--surface-2);color:var(--muted);border:2px dashed var(--line)}
+.chip{display:inline-flex;align-items:center;gap:8px;font-weight:600}
+.perfiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;max-width:640px;margin:8px auto 0}
+.perfil{display:flex;flex-direction:column;align-items:center;gap:8px;padding:22px 12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);color:var(--ink);transition:transform .15s,border-color .15s}
+.perfil:hover{transform:translateY(-2px);border-color:var(--accent)}
+.perfil b{font-size:1.05rem}
+.nuevo{max-width:420px;margin:18px auto 0}
+.nombre{flex:1;min-width:0;font:inherit;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.pinwrap{display:grid;place-items:center;min-height:60vh}
+.pinbox{width:100%;max-width:340px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}
+.pinbox h2{margin-top:10px;font-size:1.4rem}
+.dots{display:flex;gap:14px;margin:18px 0 20px}
+.dots i{width:14px;height:14px;border-radius:50%;border:2px solid var(--line);transition:background .12s,border-color .12s}
+.dots i.on{background:var(--accent);border-color:var(--accent)}
+.pad{display:grid;grid-template-columns:repeat(3,72px);gap:12px;justify-content:center}
+.key{height:60px;border-radius:16px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font-size:1.4rem;font-weight:600}
+.key:hover{border-color:var(--accent)}
+.key:active{transform:scale(.96)}
+.link{background:none;border:0;padding:4px 0;color:var(--muted);font-size:.88rem;text-decoration:underline;text-underline-offset:3px}
+.shake{animation:shake .35s}
+@keyframes shake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.btn.danger{color:var(--bad)}
+.btn.danger.armed{background:var(--bad);border-color:var(--bad);color:#fff}
 footer{margin-top:48px;font-size:.8rem;color:var(--muted);text-align:center}
 </style>
 </head>
@@ -131,7 +157,7 @@ footer{margin-top:48px;font-size:.8rem;color:var(--muted);text-align:center}
 <div class="wrap" id="app">
   <header class="top">
     <button class="brand" id="home" aria-label="Inicio"><span class="logo">A2</span><b>Test de oposición</b></button>
-    <span class="muted small" id="banco"></span>
+    <div id="quien"></div>
   </header>
   <main id="view"><p class="muted">Cargando preguntas…</p></main>
   <footer id="pie"></footer>
@@ -142,7 +168,14 @@ footer{margin-top:48px;font-size:.8rem;color:var(--muted);text-align:center}
 "use strict";
 let DATA = null;
 const view = document.getElementById("view");
-const K = { actual: "oposicion.actual", historial: "oposicion.historial", usadas: "oposicion.usadas" };
+// Cada usuario tiene sus propios resultados en este navegador. Los nombres son los del tutor.
+const USUARIOS_BASE = ["Ana", "Carmen", "Georgina"];
+let usuario = null;
+const K = {
+  get actual() { return `oposicion.${usuario}.actual`; },
+  get historial() { return `oposicion.${usuario}.historial`; },
+  get usadas() { return `oposicion.${usuario}.usadas`; },
+};
 
 // ---------- almacenamiento del navegador (puede fallar: modo privado) ----------
 function leer(k, def) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : def; } catch { return def; } }
@@ -229,7 +262,7 @@ function crear(tipo, temas, n) {
   const ex = {
     tipo, temas, n, reserva, maximo, minimo, aviso,
     minutos: sim ? R.minutos : Math.max(1, Math.round(R.minutos * n / (R.preguntas + R.reserva))),
-    preguntas: principales.concat(elegidas.slice(n)), marcas: {}, inicio: Date.now(), corregido: null,
+    preguntas: principales.concat(elegidas.slice(n)), marcas: {}, inicio: Date.now(), corregido: null, usuario,
   };
   if (sim) guardar(K.usadas, [...usadas, ...ex.preguntas.map(i => DATA.preguntas[i].id)]);
   return ex;
@@ -285,8 +318,23 @@ function inicio() {
       hist.slice(0, 12).map(h => el("li", {},
         el("span", {}, el("b", {}, h.tipo === "simulacro" ? "Simulacro" : "Test"), " ", el("span", { class: "muted" }, "· " + h.desc + " · " + fecha(h.fin))),
         el("span", { class: "pill " + (h.aprobado ? "ok" : "bad") }, coma(h.nota) + " / " + h.maximo))))) : null,
-    hist.length ? el("p", { class: "muted small" }, "Los resultados se guardan solo en este navegador.") : null
+    hist.length ? el("p", { class: "muted small" }, `Los resultados de ${usuario} se guardan solo en este navegador.`) : null,
+    hist.length || leer(K.usadas, []).length ? el("div", { class: "row", style: "margin-top:8px" }, botonBorrar()) : null
   );
+}
+
+function botonBorrar() {
+  const b = el("button", { class: "btn danger small" }, `Borrar los resultados de ${usuario}`);
+  b.addEventListener("click", () => {
+    if (!b.classList.contains("armed")) {          // primera pulsación: pide confirmar
+      b.classList.add("armed"); b.textContent = "Pulsa otra vez para borrarlos";
+      setTimeout(() => { if (b.isConnected) { b.classList.remove("armed"); b.textContent = `Borrar los resultados de ${usuario}`; } }, 4000);
+      return;
+    }
+    borrar(K.historial); borrar(K.usadas); borrar(K.actual);
+    inicio();
+  });
+  return b;
 }
 
 function configurar() {
@@ -427,7 +475,7 @@ function resultado(ex) {
   filtros.forEach(b => b.addEventListener("click", filtro(b.dataset.m)));
   pintar(
     el("section", { class: "hero" }, el("h1", {}, ex.tipo === "simulacro" ? "Resultado del simulacro" : "Resultado del test"),
-      el("p", {}, `${temasTxt(ex.temas)} · ${fecha(r.fin)}`)),
+      el("p", {}, `${ex.usuario ? ex.usuario + " · " : ""}${temasTxt(ex.temas)} · ${fecha(r.fin)}`)),
     el("div", { class: "card score" },
       el("div", { class: "ring", style: `--p:${Math.round(100 * r.nota / ex.maximo)};--c:${color}` },
         el("div", {}, el("div", {}, el("b", {}, coma(r.nota)), el("div", { class: "muted small" }, "sobre " + ex.maximo)))),
@@ -534,7 +582,7 @@ function pdfTest(ex) {
 
 function pdfRespuestas(ex) {
   const r = ex.corregido;
-  const ctx = nuevoPdf("Respuestas · " + (ex.tipo === "simulacro" ? "Simulacro de examen" : "Test de estudio"), subtitulo(ex));
+  const ctx = nuevoPdf("Respuestas · " + (ex.tipo === "simulacro" ? "Simulacro de examen" : "Test de estudio"), (ex.usuario && r ? ex.usuario + " · " : "") + subtitulo(ex));
   const { doc, W, M } = ctx, ancho = W - 2 * M;
   if (r) {
     doc.setFillColor(...(r.aprobado ? PDFC.okSoft : PDFC.badSoft)); doc.roundedRect(M, ctx.y, ancho, 18, 3, 3, "F");
@@ -576,13 +624,113 @@ function pdfRespuestas(ex) {
 }
 
 // ---------- arranque ----------
-document.getElementById("home").addEventListener("click", () => { if (DATA) inicio(); });   // un test a medias queda guardado
-fetch("preguntas.json", { cache: "no-cache" }).then(r => r.json()).then(d => {
-  DATA = d;
-  document.getElementById("banco").textContent = `${d.preguntas.length.toLocaleString("es-ES")} preguntas`;
-  document.getElementById("pie").textContent = `Reglas de puntuación: ${d.reglas.cita}.`;
+document.getElementById("home").addEventListener("click", () => { if (DATA) usuario ? inicio() : entrada(); });   // un test a medias queda guardado
+// ---------- entrada: quién eres y su PIN ----------
+// El PIN vive en este navegador (resumen SHA-256, no el número). Basta para que nadie más
+// cambie las notas de otra desde el mismo aparato; no pretende ser seguridad de servidor.
+const COLORES = ["#1f6f6b", "#8a4f9e", "#b5642c", "#3d6bb3", "#a8414f", "#4f7d2f", "#7a6a1f"];
+const colorDe = u => { const i = usuarios().indexOf(u); return COLORES[(i < 0 ? 0 : i) % COLORES.length]; };   // cada una el suyo, por orden
+function usuarios() { return [...new Set([...USUARIOS_BASE, ...leer("oposicion.usuarios", [])])]; }
+function sesion(v) { try { if (v === undefined) return sessionStorage.getItem("oposicion.sesion"); v ? sessionStorage.setItem("oposicion.sesion", v) : sessionStorage.removeItem("oposicion.sesion"); } catch {} }
+async function resumen(u, pin) {
+  const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("oposicion:" + u + ":" + pin));
+  return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join("");
+}
+const pinDe = u => leer(`oposicion.${u}.pin`, null);
+function avatar(u, grande) { return el("span", { class: "avatar" + (grande ? " big" : ""), style: `--av:${colorDe(u)}` }, u.slice(0, 1).toUpperCase()); }
+
+function pintarCabecera() {
+  const zona = document.getElementById("quien");
+  zona.replaceChildren(usuario ? el("div", { class: "row", style: "gap:8px" },
+    el("span", { class: "chip" }, avatar(usuario), usuario),
+    el("button", { class: "btn small", onclick: salir }, "Salir")) : "");
+}
+function salir() { pararReloj(); usuario = null; sesion(null); pintarCabecera(); entrada(); }
+function entrar(u) { usuario = u; sesion(u); pintarCabecera(); abrirUsuario(); }
+function abrirUsuario() {
+  if (!DATA || !usuario) return;
   const a = leer(K.actual, null);
   if (a && a.corregido) resultado(a); else inicio();
+}
+
+function entrada() {
+  pararReloj();
+  const nuevo = el("input", { class: "nombre", placeholder: "Nombre", maxlength: "30", "aria-label": "Nombre" });
+  const formNuevo = el("div", { class: "card nuevo hidden" },
+    el("b", {}, "Nueva persona"),
+    el("div", { class: "row", style: "margin-top:10px" }, nuevo,
+      el("button", { class: "btn primary", onclick: () => {
+        const n = nuevo.value.trim().slice(0, 30);
+        if (!n) return;
+        if (!usuarios().includes(n)) guardar("oposicion.usuarios", [...leer("oposicion.usuarios", []), n]);
+        pedirPin(n);
+      } }, "Continuar")));
+  pintar(
+    el("section", { class: "hero center" }, el("h1", {}, "¿Quién eres?"), el("p", {}, "Cada una tiene sus resultados y su PIN.")),
+    el("div", { class: "perfiles" },
+      usuarios().map(u => el("button", { class: "perfil", onclick: () => pedirPin(u) }, avatar(u, true), el("b", {}, u),
+        el("span", { class: "muted small" }, pinDe(u) ? "Con PIN" : "Primera vez"))),
+      el("button", { class: "perfil add", onclick: () => { formNuevo.classList.remove("hidden"); nuevo.focus(); } },
+        el("span", { class: "avatar big plus" }, "+"), el("b", {}, "Añadir"), el("span", { class: "muted small" }, "otra persona"))),
+    formNuevo
+  );
+}
+
+function pedirPin(u) {
+  const guardado = pinDe(u);
+  let fase = guardado ? "entrar" : "crear", primero = "", pin = "";
+  const titulo = el("h2", {}), ayuda = el("p", { class: "muted small", style: "margin:6px 0 0" });
+  const puntos = el("div", { class: "dots" }, [0, 1, 2, 3].map(() => el("i")));
+  const caja = el("div", { class: "card pinbox" });
+  const textos = () => {
+    titulo.textContent = fase === "entrar" ? `Hola, ${u}` : fase === "crear" ? `Crea tu PIN, ${u}` : "Repite el PIN";
+    if (!ayuda.dataset.error) ayuda.textContent = fase === "entrar" ? "Escribe tu PIN de 4 cifras." : fase === "crear" ? "Elige 4 cifras. Te lo pediremos al entrar." : "Para comprobar que no hay errores.";
+    puntos.querySelectorAll("i").forEach((d, k) => d.classList.toggle("on", k < pin.length));
+  };
+  const error = msg => {
+    ayuda.dataset.error = "1"; ayuda.textContent = msg; ayuda.style.color = "var(--bad)";
+    caja.classList.remove("shake"); void caja.offsetWidth; caja.classList.add("shake");
+    setTimeout(() => { delete ayuda.dataset.error; ayuda.style.color = ""; textos(); }, 1600);
+  };
+  const completo = async () => {
+    if (fase === "entrar") {
+      if (await resumen(u, pin) === guardado) return entrar(u);
+      pin = ""; return error("PIN incorrecto.");
+    }
+    if (fase === "crear") { primero = pin; pin = ""; fase = "repetir"; return textos(); }
+    if (pin !== primero) { pin = ""; primero = ""; fase = "crear"; return error("No coinciden. Vuelve a empezar."); }
+    guardar(`oposicion.${u}.pin`, await resumen(u, pin));
+    entrar(u);
+  };
+  const pulsar = d => {
+    if (d === "⌫") pin = pin.slice(0, -1);
+    else if (pin.length < 4) pin += d;
+    textos();
+    if (pin.length === 4) setTimeout(completo, 120);
+  };
+  const teclado = el("div", { class: "pad" }, ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "⌫"].map(d =>
+    d ? el("button", { class: "key", "aria-label": d === "⌫" ? "Borrar" : d, onclick: () => pulsar(d) }, d) : el("span")));
+  const teclas = e => { if (!caja.isConnected) return document.removeEventListener("keydown", teclas);
+    if (/^[0-9]$/.test(e.key)) pulsar(e.key); else if (e.key === "Backspace") pulsar("⌫"); else if (e.key === "Escape") entrada(); };
+  document.addEventListener("keydown", teclas);
+  const olvido = el("button", { class: "link" }, "¿Has olvidado el PIN?");
+  olvido.addEventListener("click", () => {
+    if (!olvido.dataset.armed) { olvido.dataset.armed = "1"; olvido.textContent = `Pulsa otra vez: se borran el PIN y los resultados de ${u}`; olvido.style.color = "var(--bad)"; return; }
+    for (const k of ["pin", "historial", "usadas", "actual"]) borrar(`oposicion.${u}.${k}`);
+    pedirPin(u);
+  });
+  caja.append(avatar(u, true), titulo, ayuda, puntos, teclado,
+    el("div", { class: "row", style: "justify-content:space-between;margin-top:14px" },
+      el("button", { class: "link", onclick: entrada }, "← Volver"), guardado ? olvido : el("span")));
+  pintar(el("div", { class: "pinwrap" }, caja));
+  textos();
+}
+
+fetch("preguntas.json", { cache: "no-cache" }).then(r => r.json()).then(d => {
+  DATA = d;
+  document.getElementById("pie").textContent = `${d.preguntas.length.toLocaleString("es-ES")} preguntas · Reglas de puntuación: ${d.reglas.cita}.`;
+  const u = sesion();
+  if (u && usuarios().includes(u) && pinDe(u)) entrar(u); else entrada();
 }).catch(() => { view.replaceChildren(el("p", {}, "No se han podido cargar las preguntas. Recarga la página.")); });
 </script>
 </body>
