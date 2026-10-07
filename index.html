@@ -148,6 +148,19 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
 .link{background:none;border:0;padding:4px 0;color:var(--muted);font-size:.88rem;text-decoration:underline;text-underline-offset:3px}
 .shake{animation:shake .35s}
 @keyframes shake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.tablero{margin:0 0 20px;overflow-x:auto}
+.tablero h3{font-size:1.1rem}
+.tablero table{width:100%;border-collapse:collapse;margin-top:12px;font-size:.92rem}
+.tablero th{font-size:.72rem;font-weight:600;color:var(--muted);text-align:right;padding:0 6px 8px;text-transform:uppercase;letter-spacing:.04em}
+.tablero th:first-child{text-align:left}
+.tablero td{padding:10px 6px;border-top:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+.tablero td:first-child{text-align:left}
+.tablero tr.yo td{background:var(--accent-soft)}
+.tablero tr.yo td:first-child{border-radius:10px 0 0 10px}
+.tablero tr.yo td:last-child{border-radius:0 10px 10px 0}
+.tablero td.top{color:var(--accent)}
+.medalla{margin-left:4px;font-size:.95rem}
+@media (max-width:520px){.tablero th{font-size:.62rem;letter-spacing:0}.tablero td{padding:9px 4px;font-size:.85rem}.tablero .chip{gap:6px}.medalla{margin-left:2px}}
 .btn.danger{color:var(--bad)}
 .btn.danger.armed{background:var(--bad);border-color:var(--bad);color:#fff}
 footer{margin-top:48px;font-size:.8rem;color:var(--muted);text-align:center}
@@ -168,14 +181,31 @@ footer{margin-top:48px;font-size:.8rem;color:var(--muted);text-align:center}
 "use strict";
 let DATA = null;
 const view = document.getElementById("view");
-// Cada usuario tiene sus propios resultados en este navegador. Los nombres son los del tutor.
-const USUARIOS_BASE = ["Ana", "Carmen", "Georgina"];
-let usuario = null;
+// Almacén común: hoja de Google con un Apps Script (apps-script/Code.gs). Guarda usuarias, PIN,
+// resultados y el tablero. Este navegador solo guarda una copia y el test a medias.
+const API_REAL = "https://script.google.com/macros/s/PENDIENTE/exec";
+const API = (["127.0.0.1", "localhost"].includes(location.hostname) && new URLSearchParams(location.search).get("api")) || API_REAL;
+let usuario = null, clave = null, USUARIAS = [], TABLERO = [];
 const K = {
   get actual() { return `oposicion.${usuario}.actual`; },
   get historial() { return `oposicion.${usuario}.historial`; },
   get usadas() { return `oposicion.${usuario}.usadas`; },
+  get pendientes() { return `oposicion.${usuario}.pendientes`; },
 };
+async function api(datos) {
+  const r = await fetch(API, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(datos) });
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error || "Error del servidor.");
+  if (j.tablero) TABLERO = j.tablero;
+  return j;
+}
+async function cargarEstado() {
+  const j = await (await fetch(API + "?accion=estado")).json();
+  if (!j.ok) throw new Error(j.error || "Error del servidor.");
+  USUARIAS = j.usuarias; TABLERO = j.tablero;
+}
+// Identificador corto y estable de cada pregunta (para no repetirlas entre simulacros)
+const corto = t => { let h = 0x811c9dc5; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return h.toString(36); };
 
 // ---------- almacenamiento del navegador (puede fallar: modo privado) ----------
 function leer(k, def) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : def; } catch { return def; } }
@@ -217,7 +247,7 @@ function rangos(ts) {
 function elegir(temas, cuantas, simulacro, excluir) {
   const porTema = {};
   DATA.preguntas.forEach((p, i) => {
-    if (excluir && excluir.has(p.id)) return;
+    if (excluir && excluir.has(p.h)) return;
     if (temas && !temas.includes(p.t)) return;
     (porTema[p.t] ||= []).push(i);
   });
@@ -264,7 +294,7 @@ function crear(tipo, temas, n) {
     minutos: sim ? R.minutos : Math.max(1, Math.round(R.minutos * n / (R.preguntas + R.reserva))),
     preguntas: principales.concat(elegidas.slice(n)), marcas: {}, inicio: Date.now(), corregido: null, usuario,
   };
-  if (sim) guardar(K.usadas, [...usadas, ...ex.preguntas.map(i => DATA.preguntas[i].id)]);
+  if (sim) guardar(K.usadas, [...usadas, ...ex.preguntas.map(i => DATA.preguntas[i].h)]);
   return ex;
 }
 
@@ -295,6 +325,7 @@ function inicio() {
     el("section", { class: "hero" },
       el("h1", {}, "Practica como en el examen"),
       el("p", {}, "Elige un simulacro completo o un test de estudio con los temas que quieras.")),
+    vistaTablero(),
     actual && !actual.corregido ? el("div", { class: "card", style: "margin-bottom:16px" },
       el("div", { class: "row", style: "justify-content:space-between" },
         el("div", {}, el("b", {}, "Tienes un " + (actual.tipo === "simulacro" ? "simulacro" : "test") + " sin terminar"),
@@ -318,7 +349,7 @@ function inicio() {
       hist.slice(0, 12).map(h => el("li", {},
         el("span", {}, el("b", {}, h.tipo === "simulacro" ? "Simulacro" : "Test"), " ", el("span", { class: "muted" }, "· " + h.desc + " · " + fecha(h.fin))),
         el("span", { class: "pill " + (h.aprobado ? "ok" : "bad") }, coma(h.nota) + " / " + h.maximo))))) : null,
-    hist.length ? el("p", { class: "muted small" }, `Los resultados de ${usuario} se guardan solo en este navegador.`) : null,
+    leer(K.pendientes, []).length ? el("p", { class: "muted small" }, "Hay resultados pendientes de enviar: se mandarán en cuanto haya conexión.") : null,
     hist.length || leer(K.usadas, []).length ? el("div", { class: "row", style: "margin-top:8px" }, botonBorrar()) : null
   );
 }
@@ -331,8 +362,10 @@ function botonBorrar() {
       setTimeout(() => { if (b.isConnected) { b.classList.remove("armed"); b.textContent = `Borrar los resultados de ${usuario}`; } }, 4000);
       return;
     }
-    borrar(K.historial); borrar(K.usadas); borrar(K.actual);
-    inicio();
+    b.disabled = true; b.textContent = "Borrando…";
+    api({ accion: "borrar", nombre: usuario, clave }).then(() => {
+      borrar(K.historial); borrar(K.usadas); borrar(K.actual); borrar(K.pendientes); inicio();
+    }).catch(err => { b.disabled = false; b.classList.remove("armed"); b.textContent = "No se pudo borrar: " + err.message; });
   });
   return b;
 }
@@ -427,7 +460,10 @@ function test(ex) {
     const hist = leer(K.historial, []);
     hist.unshift({ tipo: ex.tipo, desc: ex.tipo === "simulacro" ? "100 preguntas" : `${temasTxt(ex.temas)} · ${ex.n} preg.`, nota: ex.corregido.nota, maximo: ex.maximo, aprobado: ex.corregido.aprobado, fin: ex.corregido.fin });
     guardar(K.historial, hist.slice(0, 50));
+    const envio = { ...hist[0], a: ex.corregido.a, e: ex.corregido.e, b: ex.corregido.b, n: ex.n };
+    guardar(K.pendientes, [...leer(K.pendientes, []), envio]);
     resultado(ex);
+    enviarPendientes();
   };
   const confirmar = el("p", { class: "muted small center" });
   pintar(
@@ -626,83 +662,146 @@ function pdfRespuestas(ex) {
 // ---------- arranque ----------
 document.getElementById("home").addEventListener("click", () => { if (DATA) usuario ? inicio() : entrada(); });   // un test a medias queda guardado
 // ---------- entrada: quién eres y su PIN ----------
-// El PIN vive en este navegador (resumen SHA-256, no el número). Basta para que nadie más
-// cambie las notas de otra desde el mismo aparato; no pretende ser seguridad de servidor.
+// El PIN se comprueba en el servidor (Apps Script), que bloquea tras 5 fallos. La web solo
+// manda su resumen SHA-256. No es seguridad bancaria: basta para que nadie toque notas ajenas.
 const COLORES = ["#1f6f6b", "#8a4f9e", "#b5642c", "#3d6bb3", "#a8414f", "#4f7d2f", "#7a6a1f"];
-const colorDe = u => { const i = usuarios().indexOf(u); return COLORES[(i < 0 ? 0 : i) % COLORES.length]; };   // cada una el suyo, por orden
-function usuarios() { return [...new Set([...USUARIOS_BASE, ...leer("oposicion.usuarios", [])])]; }
-function sesion(v) { try { if (v === undefined) return sessionStorage.getItem("oposicion.sesion"); v ? sessionStorage.setItem("oposicion.sesion", v) : sessionStorage.removeItem("oposicion.sesion"); } catch {} }
+const nombres = () => USUARIAS.map(u => u.nombre);
+const colorDe = u => { const i = nombres().indexOf(u); return COLORES[(i < 0 ? 0 : i) % COLORES.length]; };
+function sesion(v) {
+  try {
+    if (v === undefined) return JSON.parse(sessionStorage.getItem("oposicion.sesion") || "null");
+    v ? sessionStorage.setItem("oposicion.sesion", JSON.stringify(v)) : sessionStorage.removeItem("oposicion.sesion");
+  } catch { return null; }
+}
 async function resumen(u, pin) {
   const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("oposicion:" + u + ":" + pin));
   return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join("");
 }
-const pinDe = u => leer(`oposicion.${u}.pin`, null);
 function avatar(u, grande) { return el("span", { class: "avatar" + (grande ? " big" : ""), style: `--av:${colorDe(u)}` }, u.slice(0, 1).toUpperCase()); }
 
 function pintarCabecera() {
-  const zona = document.getElementById("quien");
-  zona.replaceChildren(usuario ? el("div", { class: "row", style: "gap:8px" },
+  document.getElementById("quien").replaceChildren(usuario ? el("div", { class: "row", style: "gap:8px" },
     el("span", { class: "chip" }, avatar(usuario), usuario),
     el("button", { class: "btn small", onclick: salir }, "Salir")) : "");
 }
-function salir() { pararReloj(); usuario = null; sesion(null); pintarCabecera(); entrada(); }
-function entrar(u) { usuario = u; sesion(u); pintarCabecera(); abrirUsuario(); }
+function salir() { pararReloj(); usuario = clave = null; sesion(null); pintarCabecera(); entrada(); }
+function entrar(u, c, datos) {
+  usuario = u; clave = c; sesion({ u, c });
+  if (datos) {   // lo del servidor manda; lo pendiente de enviar se conserva
+    const pend = leer(K.pendientes, []);
+    guardar(K.historial, [...pend.slice().reverse(), ...datos.historial].sort((a, b) => b.fin - a.fin).slice(0, 50));
+    guardar(K.usadas, [...new Set([...datos.usadas, ...leer(K.usadas, [])])]);
+  }
+  pintarCabecera(); abrirUsuario(); enviarPendientes();
+}
 function abrirUsuario() {
   if (!DATA || !usuario) return;
   const a = leer(K.actual, null);
   if (a && a.corregido) resultado(a); else inicio();
 }
+let enviando = false;
+async function enviarPendientes() {
+  if (enviando || !usuario) return;
+  const pend = leer(K.pendientes, []);
+  if (!pend.length) return;
+  enviando = true;
+  try {
+    for (const r of pend) {
+      await api({ accion: "guardar", nombre: usuario, clave, resultado: r, usadas: leer(K.usadas, []) });
+      guardar(K.pendientes, leer(K.pendientes, []).filter(x => x.fin !== r.fin));
+    }
+    refrescarTablero();
+  } catch { /* sin conexión: se reintenta en la próxima ocasión */ }
+  enviando = false;
+}
+
+// ---------- tablero ----------
+const tableros = new Set();
+function refrescarTablero() { for (const t of [...tableros]) { if (!t.isConnected) { tableros.delete(t); continue; } t.replaceWith(vistaTablero()); } }
+function vistaTablero() {
+  const filas = TABLERO.filter(t => t.total > 0 || t.nombre === usuario);
+  const caja = el("section", { class: "card tablero" });
+  tableros.add(caja);
+  const lider = campo => { const v = filas.map(f => f[campo]).filter(x => x !== null && x > 0); return v.length ? Math.max(...v) : null; };
+  const L = { mejor: lider("mejor"), media5: lider("media5"), semana: lider("semana") };
+  const celda = (f, campo, txt) => el("td", { class: f[campo] !== null && f[campo] === L[campo] ? "top" : "" },
+    f[campo] === null ? el("span", { class: "muted" }, "—") : txt, f[campo] !== null && f[campo] === L[campo] ? el("span", { class: "medalla", title: "Líder" }, "🥇") : null);
+  caja.append(
+    el("h3", {}, "Clasificación"),
+    filas.length ? el("table", {},
+      el("thead", {}, el("tr", {}, el("th", {}, ""), el("th", {}, "Mejor"), el("th", {}, "Media"), el("th", {}, "Semana"))),
+      el("tbody", {}, filas
+        .sort((a, b) => (b.media5 ?? -1) - (a.media5 ?? -1) || (b.semana - a.semana))
+        .map(f => el("tr", { class: f.nombre === usuario ? "yo" : "" },
+          el("td", {}, el("span", { class: "chip" }, avatar(f.nombre), f.nombre)),
+          celda(f, "mejor", coma(f.mejor ?? 0)),
+          celda(f, "media5", coma(f.media5 ?? 0)),
+          celda(f, "semana", String(f.semana)))))) :
+      el("p", { class: "muted small" }, "Todavía no hay resultados. ¡El primer simulacro abre la clasificación!"),
+    filas.length ? el("p", { class: "muted small", style: "margin:10px 0 0" }, "Mejor: su mejor simulacro · Media: sus 5 últimos simulacros (sobre 30) · Semana: tests y simulacros hechos desde el lunes.") : null);
+  return caja;
+}
 
 function entrada() {
   pararReloj();
   const nuevo = el("input", { class: "nombre", placeholder: "Nombre", maxlength: "30", "aria-label": "Nombre" });
+  const avisoNuevo = el("p", { class: "muted small" });
   const formNuevo = el("div", { class: "card nuevo hidden" },
     el("b", {}, "Nueva persona"),
     el("div", { class: "row", style: "margin-top:10px" }, nuevo,
-      el("button", { class: "btn primary", onclick: () => {
-        const n = nuevo.value.trim().slice(0, 30);
+      el("button", { class: "btn primary", onclick: async ev => {
+        const n = nuevo.value.trim().replace(/\s+/g, " ").slice(0, 30);
         if (!n) return;
-        if (!usuarios().includes(n)) guardar("oposicion.usuarios", [...leer("oposicion.usuarios", []), n]);
-        pedirPin(n);
-      } }, "Continuar")));
+        ev.target.disabled = true;
+        try { await api({ accion: "nueva", nombre: n }); await cargarEstado(); pedirPin(n); }
+        catch (err) { avisoNuevo.textContent = err.message; ev.target.disabled = false; }
+      } }, "Continuar")), avisoNuevo);
+  const quedanHuecos = USUARIAS.length < 5;
   pintar(
-    el("section", { class: "hero center" }, el("h1", {}, "¿Quién eres?"), el("p", {}, "Cada una tiene sus resultados y su PIN.")),
+    el("section", { class: "hero center" }, el("h1", {}, "¿Quién eres?"), el("p", {}, "Cada una tiene sus resultados y su PIN, desde cualquier aparato.")),
     el("div", { class: "perfiles" },
-      usuarios().map(u => el("button", { class: "perfil", onclick: () => pedirPin(u) }, avatar(u, true), el("b", {}, u),
-        el("span", { class: "muted small" }, pinDe(u) ? "Con PIN" : "Primera vez"))),
-      el("button", { class: "perfil add", onclick: () => { formNuevo.classList.remove("hidden"); nuevo.focus(); } },
-        el("span", { class: "avatar big plus" }, "+"), el("b", {}, "Añadir"), el("span", { class: "muted small" }, "otra persona"))),
-    formNuevo
+      USUARIAS.map(u => el("button", { class: "perfil", onclick: () => pedirPin(u.nombre) }, avatar(u.nombre, true), el("b", {}, u.nombre),
+        el("span", { class: "muted small" }, u.tienePin ? "Con PIN" : "Primera vez"))),
+      quedanHuecos ? el("button", { class: "perfil add", onclick: () => { formNuevo.classList.remove("hidden"); nuevo.focus(); } },
+        el("span", { class: "avatar big plus" }, "+"), el("b", {}, "Añadir"), el("span", { class: "muted small" }, "otra persona")) : null),
+    formNuevo,
+    el("div", { style: "margin-top:28px" }, vistaTablero())
   );
 }
 
 function pedirPin(u) {
-  const guardado = pinDe(u);
-  let fase = guardado ? "entrar" : "crear", primero = "", pin = "";
-  const titulo = el("h2", {}), ayuda = el("p", { class: "muted small", style: "margin:6px 0 0" });
+  const tiene = (USUARIAS.find(x => x.nombre === u) || {}).tienePin;
+  let fase = tiene ? "entrar" : "crear", primero = "", pin = "", ocupado = false;
+  const titulo = el("h2", {}), ayuda = el("p", { class: "muted small", style: "margin:6px 0 0;min-height:1.4em" });
   const puntos = el("div", { class: "dots" }, [0, 1, 2, 3].map(() => el("i")));
   const caja = el("div", { class: "card pinbox" });
   const textos = () => {
     titulo.textContent = fase === "entrar" ? `Hola, ${u}` : fase === "crear" ? `Crea tu PIN, ${u}` : "Repite el PIN";
-    if (!ayuda.dataset.error) ayuda.textContent = fase === "entrar" ? "Escribe tu PIN de 4 cifras." : fase === "crear" ? "Elige 4 cifras. Te lo pediremos al entrar." : "Para comprobar que no hay errores.";
+    if (!ayuda.dataset.error) ayuda.textContent = ocupado ? "Comprobando…" : fase === "entrar" ? "Escribe tu PIN de 4 cifras." : fase === "crear" ? "Elige 4 cifras. Te lo pediremos al entrar." : "Para comprobar que no hay errores.";
     puntos.querySelectorAll("i").forEach((d, k) => d.classList.toggle("on", k < pin.length));
   };
   const error = msg => {
     ayuda.dataset.error = "1"; ayuda.textContent = msg; ayuda.style.color = "var(--bad)";
     caja.classList.remove("shake"); void caja.offsetWidth; caja.classList.add("shake");
-    setTimeout(() => { delete ayuda.dataset.error; ayuda.style.color = ""; textos(); }, 1600);
+    setTimeout(() => { delete ayuda.dataset.error; ayuda.style.color = ""; textos(); }, 2200);
   };
   const completo = async () => {
-    if (fase === "entrar") {
-      if (await resumen(u, pin) === guardado) return entrar(u);
-      pin = ""; return error("PIN incorrecto.");
-    }
     if (fase === "crear") { primero = pin; pin = ""; fase = "repetir"; return textos(); }
-    if (pin !== primero) { pin = ""; primero = ""; fase = "crear"; return error("No coinciden. Vuelve a empezar."); }
-    guardar(`oposicion.${u}.pin`, await resumen(u, pin));
-    entrar(u);
+    if (fase === "repetir" && pin !== primero) { pin = ""; primero = ""; fase = "crear"; return error("No coinciden. Vuelve a empezar."); }
+    ocupado = true; textos();
+    try {
+      const c = await resumen(u, pin);
+      const datos = await api({ accion: fase === "entrar" ? "entrar" : "crearPin", nombre: u, clave: c });
+      const yo = USUARIAS.find(x => x.nombre === u); if (yo) yo.tienePin = true;
+      entrar(u, c, datos);
+    } catch (err) {
+      ocupado = false; pin = "";
+      if (fase === "repetir") { fase = "crear"; primero = ""; }
+      error(err.message === "Failed to fetch" ? "Sin conexión con el servidor." : err.message);
+    }
   };
   const pulsar = d => {
+    if (ocupado) return;
     if (d === "⌫") pin = pin.slice(0, -1);
     else if (pin.length < 4) pin += d;
     textos();
@@ -714,14 +813,10 @@ function pedirPin(u) {
     if (/^[0-9]$/.test(e.key)) pulsar(e.key); else if (e.key === "Backspace") pulsar("⌫"); else if (e.key === "Escape") entrada(); };
   document.addEventListener("keydown", teclas);
   const olvido = el("button", { class: "link" }, "¿Has olvidado el PIN?");
-  olvido.addEventListener("click", () => {
-    if (!olvido.dataset.armed) { olvido.dataset.armed = "1"; olvido.textContent = `Pulsa otra vez: se borran el PIN y los resultados de ${u}`; olvido.style.color = "var(--bad)"; return; }
-    for (const k of ["pin", "historial", "usadas", "actual"]) borrar(`oposicion.${u}.${k}`);
-    pedirPin(u);
-  });
+  olvido.addEventListener("click", () => { olvido.replaceWith(el("span", { class: "muted small" }, "Pídele a Nadal que te lo reinicie.")); });
   caja.append(avatar(u, true), titulo, ayuda, puntos, teclado,
     el("div", { class: "row", style: "justify-content:space-between;margin-top:14px" },
-      el("button", { class: "link", onclick: entrada }, "← Volver"), guardado ? olvido : el("span")));
+      el("button", { class: "link", onclick: entrada }, "← Volver"), tiene ? olvido : el("span")));
   pintar(el("div", { class: "pinwrap" }, caja));
   textos();
 }
@@ -729,8 +824,12 @@ function pedirPin(u) {
 fetch("preguntas.json", { cache: "no-cache" }).then(r => r.json()).then(d => {
   DATA = d;
   document.getElementById("pie").textContent = `${d.preguntas.length.toLocaleString("es-ES")} preguntas · Reglas de puntuación: ${d.reglas.cita}.`;
-  const u = sesion();
-  if (u && usuarios().includes(u) && pinDe(u)) entrar(u); else entrada();
+  d.preguntas.forEach(p => p.h = corto(p.id));
+  return cargarEstado().then(() => {
+    const ses = sesion();
+    if (ses && nombres().includes(ses.u)) entrar(ses.u, ses.c); else entrada();
+  }, () => view.replaceChildren(el("div", { class: "card center" }, el("h3", {}, "No se puede conectar"),
+    el("p", { class: "muted" }, "El servidor de resultados no responde. Revisa la conexión y recarga la página."))));
 }).catch(() => { view.replaceChildren(el("p", {}, "No se han podido cargar las preguntas. Recarga la página.")); });
 </script>
 </body>
