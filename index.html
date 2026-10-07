@@ -161,6 +161,16 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
 .tablero td.top{color:var(--accent)}
 .medalla{margin-left:4px;font-size:.95rem}
 @media (max-width:520px){.tablero th{font-size:.62rem;letter-spacing:0}.tablero td{padding:9px 4px;font-size:.85rem}.tablero .chip{gap:6px}.medalla{margin-left:2px}}
+.espera{max-width:420px;margin:12vh auto 0;text-align:center}
+.espera h3{font-size:1.25rem;margin-bottom:6px}
+.barra{height:8px;border-radius:8px;background:var(--surface-2);overflow:hidden;margin:18px 0 12px;position:relative}
+.barra i{position:absolute;inset:0 auto 0 0;width:0;border-radius:8px;background:linear-gradient(90deg,var(--accent),color-mix(in srgb,var(--accent) 60%,#fff));animation:avanza var(--dur,18s) cubic-bezier(.1,.6,.3,1) forwards}
+.barra i:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.45),transparent);animation:brillo 1.4s linear infinite}
+.barra.fina{height:5px;margin:4px 0 0;width:100%}
+.mensaje{min-height:1.5em;transition:opacity .3s}
+@keyframes avanza{to{width:94%}}
+@keyframes brillo{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+@media (prefers-reduced-motion:reduce){.barra i{animation-duration:.01s}.barra i:after{animation:none}}
 .btn.danger{color:var(--bad)}
 .btn.danger.armed{background:var(--bad);border-color:var(--bad);color:#fff}
 footer{margin-top:48px;font-size:.8rem;color:var(--muted);text-align:center}
@@ -176,7 +186,7 @@ footer{margin-top:48px;font-size:.8rem;color:var(--muted);text-align:center}
   <footer id="pie"></footer>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js"></script>
 <script>
 "use strict";
 let DATA = null;
@@ -194,28 +204,47 @@ const K = {
   get usadas() { return `oposicion.${usuario}.usadas`; },
   get pendientes() { return `oposicion.${usuario}.pendientes`; },
 };
-// Google a veces devuelve una respuesta vacía o rota: se reintenta. Repetir es seguro porque el
+// Google suele responder en 1,5-6 s, pero a veces se cuelga ~30 s y acaba en 404, o devuelve una
+// respuesta vacía: cada intento se corta a los 12 s y se reintenta. Repetir es seguro porque el
 // servidor no guarda dos veces el mismo resultado y el resto de acciones no duplican nada.
 async function pedir(url, opciones) {
   let ultimo;
   for (let intento = 0; intento < 4; intento++) {
-    if (intento) await new Promise(r => setTimeout(r, 700 * intento));
+    if (intento) await new Promise(r => setTimeout(r, 500 * intento));
+    const corte = new AbortController(), reloj = setTimeout(() => corte.abort(), 12000);
     try {
-      const j = await (await fetch(url, opciones)).json();
+      const j = await (await fetch(url, { ...opciones, signal: corte.signal })).json();
       if (!j.ok) throw Object.assign(new Error(j.error || "Error del servidor."), { delServidor: true });
       if (j.tablero) TABLERO = j.tablero.filter(t => t.nombre !== PRUEBA);
       return j;
     } catch (err) {
       if (err.delServidor) throw err;          // PIN incorrecto, bloqueo…: no se reintenta
       ultimo = err;
-    }
+    } finally { clearTimeout(reloj); }
   }
   throw new Error("Sin conexión con el servidor.");
 }
 const api = datos => pedir(API, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(datos) });
+// Google tarda 3-7 s en responder: la web arranca con lo último que guardó este aparato
+// y se actualiza cuando llega la respuesta.
 async function cargarEstado() {
-  const j = await pedir(API + "?accion=estado");
+  // solo lectura: si Google tarda más de 4 s (arranque en frío), se lanza otra petición en paralelo
+  // y vale la primera que llegue
+  const j = await new Promise((ok, ko) => {
+    let fallos = 0, hecho = false;
+    const lanzar = () => pedir(API + "?accion=estado").then(r => { if (!hecho) { hecho = true; ok(r); } }, e => { if (++fallos === 2) ko(e); });
+    lanzar();
+    setTimeout(() => { if (!hecho) lanzar(); else fallos++; }, 4000);
+  });
+  guardar("oposicion.estado", { usuarias: j.usuarias, tablero: j.tablero });
   USUARIAS = j.usuarias.filter(u => u.nombre !== PRUEBA || VER_PRUEBA);
+}
+function estadoGuardado() {
+  const e = leer("oposicion.estado", null);
+  if (!e) return false;
+  USUARIAS = e.usuarias.filter(u => u.nombre !== PRUEBA || VER_PRUEBA);
+  TABLERO = e.tablero.filter(t => t.nombre !== PRUEBA);
+  return true;
 }
 // Identificador corto y estable de cada pregunta (para no repetirlas entre simulacros)
 const corto = t => { let h = 0x811c9dc5; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return h.toString(36); };
@@ -690,6 +719,31 @@ async function resumen(u, pin) {
   const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("oposicion:" + u + ":" + pin));
   return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join("");
 }
+// Espera con barra de progreso y mensajes que van cambiando (Google puede tardar ~15 s)
+const MENSAJES = ["Conectando con el servidor…", "Barajando las preguntas…", "Consultando al tribunal…", "Afilando el lápiz…",
+  "Repasando el BOIB…", "Ordenando la clasificación…", "Calentando motores…", "Casi listo…"];
+function barraEspera(fina) {
+  const barra = el("div", { class: "barra" + (fina ? " fina" : "") }, el("i"));
+  return barra;
+}
+function mensajesRotando(nodo, inicio = 0, activo = () => true) {   // se para sola cuando activo() es falso
+  let i = inicio;
+  const cambiar = () => {
+    if (!nodo.isConnected || !activo()) { nodo.style.opacity = 1; return clearInterval(t); }
+    nodo.style.opacity = 0;
+    setTimeout(() => { if (activo()) nodo.textContent = MENSAJES[++i % MENSAJES.length]; nodo.style.opacity = 1; }, 300);
+  };
+  const t = setInterval(cambiar, 2600);
+  nodo.textContent = MENSAJES[i];
+  return nodo;
+}
+function pantallaEspera() {
+  return el("div", { class: "espera" },
+    el("h3", {}, "Preparando tus tests"),
+    barraEspera(),
+    mensajesRotando(el("p", { class: "muted small mensaje" })),
+    el("p", { class: "muted small", style: "margin-top:18px;opacity:.7" }, "La primera vez en este aparato puede tardar unos segundos."));
+}
 function avatar(u, grande) { return el("span", { class: "avatar" + (grande ? " big" : ""), style: `--av:${colorDe(u)}` }, u.slice(0, 1).toUpperCase()); }
 
 function pintarCabecera() {
@@ -700,12 +754,23 @@ function pintarCabecera() {
 function salir() { pararReloj(); usuario = clave = null; sesion(null); pintarCabecera(); entrada(); }
 function entrar(u, c, datos) {
   usuario = u; clave = c; sesion({ u, c });
-  if (datos) {   // lo del servidor manda; lo pendiente de enviar se conserva
-    const pend = leer(K.pendientes, []);
-    guardar(K.historial, [...pend.slice().reverse(), ...datos.historial].sort((a, b) => b.fin - a.fin).slice(0, 50));
-    guardar(K.usadas, [...new Set([...datos.usadas, ...leer(K.usadas, [])])]);
-  }
+  if (datos) sincronizar(datos);
   pintarCabecera(); abrirUsuario(); enviarPendientes();
+}
+function sincronizar(datos) {   // lo del servidor manda; lo pendiente de enviar se conserva
+  const pend = leer(K.pendientes, []);
+  guardar(K.historial, [...pend.slice().reverse(), ...datos.historial].sort((a, b) => b.fin - a.fin).slice(0, 50));
+  guardar(K.usadas, [...new Set([...datos.usadas, ...leer(K.usadas, [])])]);
+}
+// Al volver con la sesión abierta se entra al momento con lo guardado, y detrás se trae del
+// servidor lo hecho en otros aparatos (y se comprueba que el PIN sigue valiendo).
+function sincronizarDetras() {
+  const u = usuario;
+  api({ accion: "entrar", nombre: u, clave }).then(datos => {
+    if (usuario !== u) return;
+    sincronizar(datos);
+    if (view.querySelector(".hero h1")?.textContent === "Practica como en el examen") inicio();
+  }, err => { if (usuario === u && /PIN/.test(err.message)) salir(); });
 }
 function abrirUsuario() {
   if (!DATA || !usuario) return;
@@ -739,7 +804,7 @@ function vistaTablero() {
   const L = { mejor: lider("mejor"), media5: lider("media5"), semana: lider("semana") };
   const celda = (f, campo, txt) => el("td", { class: f[campo] !== null && f[campo] === L[campo] ? "top" : "" },
     f[campo] === null ? el("span", { class: "muted" }, "—") : txt, f[campo] !== null && f[campo] === L[campo] ? el("span", { class: "medalla", title: "Líder" }, "🥇") : null);
-  caja.append(
+  caja.append(...[
     el("h3", {}, "Clasificación"),
     filas.length ? el("table", {},
       el("thead", {}, el("tr", {}, el("th", {}, ""), el("th", {}, "Mejor"), el("th", {}, "Media"), el("th", {}, "Semana"))),
@@ -751,7 +816,8 @@ function vistaTablero() {
           celda(f, "media5", coma(f.media5 ?? 0)),
           celda(f, "semana", String(f.semana)))))) :
       el("p", { class: "muted small" }, "Todavía no hay resultados. ¡El primer simulacro abre la clasificación!"),
-    filas.length ? el("p", { class: "muted small", style: "margin:10px 0 0" }, "Mejor: su mejor simulacro · Media: sus 5 últimos simulacros (sobre 30) · Semana: tests y simulacros hechos desde el lunes.") : null);
+    filas.length ? el("p", { class: "muted small", style: "margin:10px 0 0" }, "Mejor: su mejor simulacro · Media: sus 5 últimos simulacros (sobre 30) · Semana: tests y simulacros hechos desde el lunes.") : null
+  ].filter(Boolean));   // append() escribiría «null» como texto
   return caja;
 }
 
@@ -787,10 +853,12 @@ function pedirPin(u) {
   let fase = tiene ? "entrar" : "crear", primero = "", pin = "", ocupado = false;
   const titulo = el("h2", {}), ayuda = el("p", { class: "muted small", style: "margin:6px 0 0;min-height:1.4em" });
   const puntos = el("div", { class: "dots" }, [0, 1, 2, 3].map(() => el("i")));
+  const espera = el("div", { style: "width:100%;max-width:220px;min-height:9px" });
   const caja = el("div", { class: "card pinbox" });
   const textos = () => {
     titulo.textContent = fase === "entrar" ? `Hola, ${u}` : fase === "crear" ? `Crea tu PIN, ${u}` : "Repite el PIN";
-    if (!ayuda.dataset.error) ayuda.textContent = ocupado ? "Comprobando…" : fase === "entrar" ? "Escribe tu PIN de 4 cifras." : fase === "crear" ? "Elige 4 cifras. Te lo pediremos al entrar." : "Para comprobar que no hay errores.";
+    espera.replaceChildren(...(ocupado ? [barraEspera(true)] : []));
+    if (!ayuda.dataset.error && !ocupado) ayuda.textContent = fase === "entrar" ? "Escribe tu PIN de 4 cifras." : fase === "crear" ? "Elige 4 cifras. Te lo pediremos al entrar." : "Para comprobar que no hay errores.";
     puntos.querySelectorAll("i").forEach((d, k) => d.classList.toggle("on", k < pin.length));
   };
   const error = msg => {
@@ -801,10 +869,16 @@ function pedirPin(u) {
   const completo = async () => {
     if (fase === "crear") { primero = pin; pin = ""; fase = "repetir"; return textos(); }
     if (fase === "repetir" && pin !== primero) { pin = ""; primero = ""; fase = "crear"; return error("No coinciden. Vuelve a empezar."); }
-    ocupado = true; textos();
+    ocupado = true; textos(); mensajesRotando(ayuda, 0, () => ocupado); ayuda.textContent = "Comprobando el PIN…";
     try {
       const c = await resumen(u, pin);
-      const datos = await api({ accion: fase === "entrar" ? "entrar" : "crearPin", nombre: u, clave: c });
+      let datos;
+      try { datos = await api({ accion: fase === "entrar" ? "entrar" : "crearPin", nombre: u, clave: c }); }
+      catch (err) {
+        // un reintento de crear el PIN puede llegar cuando el primero ya lo guardó: se entra con él
+        if (fase === "repetir" && /ya tiene PIN/.test(err.message)) datos = await api({ accion: "entrar", nombre: u, clave: c });
+        else throw err;
+      }
       const yo = USUARIAS.find(x => x.nombre === u); if (yo) yo.tienePin = true;
       entrar(u, c, datos);
     } catch (err) {
@@ -827,22 +901,35 @@ function pedirPin(u) {
   document.addEventListener("keydown", teclas);
   const olvido = el("button", { class: "link" }, "¿Has olvidado el PIN?");
   olvido.addEventListener("click", () => { olvido.replaceWith(el("span", { class: "muted small" }, "Pídele a Nadal que te lo reinicie.")); });
-  caja.append(avatar(u, true), titulo, ayuda, puntos, teclado,
+  caja.append(avatar(u, true), titulo, ayuda, espera, puntos, teclado,
     el("div", { class: "row", style: "justify-content:space-between;margin-top:14px" },
       el("button", { class: "link", onclick: entrada }, "← Volver"), tiene ? olvido : el("span")));
   pintar(el("div", { class: "pinwrap" }, caja));
   textos();
 }
 
+const estadoListo = cargarEstado();          // a la vez que las preguntas, no después
+const sinConexion = () => view.replaceChildren(el("div", { class: "card center" }, el("h3", {}, "No se puede conectar"),
+  el("p", { class: "muted" }, "El servidor de resultados no responde. Revisa la conexión y recarga la página.")));
 fetch("preguntas.json", { cache: "no-cache" }).then(r => r.json()).then(d => {
   DATA = d;
   document.getElementById("pie").textContent = `${d.preguntas.length.toLocaleString("es-ES")} preguntas · Reglas de puntuación: ${d.reglas.cita}.`;
   d.preguntas.forEach(p => p.h = corto(p.id));
-  return cargarEstado().then(() => {
+  const arrancar = desdeGuardado => {
     const ses = sesion();
-    if (ses && nombres().includes(ses.u)) entrar(ses.u, ses.c); else entrada();
-  }, () => view.replaceChildren(el("div", { class: "card center" }, el("h3", {}, "No se puede conectar"),
-    el("p", { class: "muted" }, "El servidor de resultados no responde. Revisa la conexión y recarga la página."))));
+    if (ses && nombres().includes(ses.u)) { entrar(ses.u, ses.c); if (desdeGuardado) sincronizarDetras(); }
+    else entrada();
+  };
+  if (estadoGuardado()) {
+    arrancar(true);
+    estadoListo.then(() => {
+      // en la entrada se repinta (salvo si está escribiendo un nombre nuevo); dentro, solo el tablero
+      if (view.querySelector(".perfiles") && view.querySelector(".nuevo.hidden")) entrada(); else refrescarTablero();
+    }, () => {});
+  } else {
+    view.replaceChildren(pantallaEspera());
+    return estadoListo.then(() => arrancar(false), sinConexion);
+  }
 }).catch(() => { view.replaceChildren(el("p", {}, "No se han podido cargar las preguntas. Recarga la página.")); });
 </script>
 </body>
