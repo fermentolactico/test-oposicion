@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Administración · Test de oposición</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%278%27 fill=%27%231f6f6b%27/%3E%3Cpath d=%27M9 17l4.5 4.5L23 11%27 stroke=%27white%27 stroke-width=%273.2%27 fill=%27none%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,650&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f3ee;--surface:#fffdf9;--surface-2:#f0ebe3;--ink:#1f2a2e;--muted:#5f6b6f;--line:#e2dbd0;--accent:#1f6f6b;--accent-ink:#fff;--accent-soft:#dcece9;--ok:#2e7d4f;--ok-soft:#e1f1e6;--bad:#b4483c;--bad-soft:#f7e3df;--radius:16px}
+@media (prefers-color-scheme:dark){:root{--bg:#141a1c;--surface:#1c2427;--surface-2:#232d31;--ink:#e9eeec;--muted:#9aa8a6;--line:#2e3a3e;--accent:#5cbdb4;--accent-ink:#0f1a1a;--accent-soft:#1f3634;--ok:#6cc792;--ok-soft:#1d3327;--bad:#ec8d80;--bad-soft:#3a2321}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Inter,system-ui,sans-serif}
+h1,h2{font-family:Fraunces,Georgia,serif;font-weight:650;margin:0}
+h1{font-size:1.7rem}h2{font-size:1.15rem;margin-bottom:12px}
+.wrap{max-width:1000px;margin:0 auto;padding:24px 16px 80px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-top:18px;overflow-x:auto}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.muted{color:var(--muted)}.small{font-size:.85rem}
+button,input,select{font:inherit}
+.btn{border-radius:10px;padding:8px 14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-weight:600;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.danger{color:var(--bad)}.btn.armed{background:var(--bad);border-color:var(--bad);color:#fff}
+input,select{padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+th{text-align:left;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);padding:6px 8px;border-bottom:1px solid var(--line)}
+td{padding:8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+.pill{font-weight:600;border-radius:999px;padding:1px 9px;font-size:.8rem}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}.pill.bad{background:var(--bad-soft);color:var(--bad)}
+.login{max-width:360px;margin:14vh auto 0;text-align:center}
+.login input{width:100%;margin:16px 0 10px;text-align:center}
+.error{color:var(--bad);min-height:1.4em}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="login card" id="login">
+    <h1>Administración</h1>
+    <p class="muted small">Personas, PIN y notas de la web de tests.</p>
+    <input id="clave" type="password" placeholder="Contraseña" autocomplete="current-password">
+    <button class="btn primary" id="entrar" style="width:100%">Entrar</button>
+    <p class="error small" id="error"></p>
+  </section>
+
+  <main id="panel" class="hidden">
+    <div class="row" style="justify-content:space-between">
+      <div><h1>Administración</h1><p class="muted small" id="resumen" style="margin:4px 0 0"></p></div>
+      <div class="row"><a class="btn" href="./">Ir a la web</a><button class="btn" id="salir">Salir</button></div>
+    </div>
+
+    <section class="card"><h2>Clasificación</h2><table id="tablero"></table></section>
+
+    <section class="card">
+      <h2>Personas</h2>
+      <p class="muted small" style="margin-top:-6px">«Reiniciar PIN» le deja crear uno nuevo al entrar; sus notas se conservan. «Borrar» elimina a la persona y todas sus notas.</p>
+      <table id="personas"></table>
+    </section>
+
+    <section class="card">
+      <div class="row" style="justify-content:space-between;margin-bottom:10px">
+        <h2 style="margin:0">Resultados</h2>
+        <div class="row"><select id="filtro"></select><button class="btn" id="csv">Descargar CSV</button></div>
+      </div>
+      <table id="resultados"></table>
+    </section>
+  </main>
+</div>
+<script>
+"use strict";
+const API = "https://test-oposicion.fermentolactico.workers.dev/";
+let token = null, datos = null;
+const $ = id => document.getElementById(id);
+const poner = (nodo, ...hijos) => nodo.replaceChildren(...hijos.flat(Infinity).filter(h => h !== null && h !== undefined && h !== false));   // replaceChildren no aplana listas
+const el = (tag, attrs = {}, ...hijos) => {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) if (k === "class") e.className = v; else if (k.startsWith("on")) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v);
+  for (const h of hijos.flat(Infinity)) if (h !== null && h !== undefined && h !== false) e.append(h instanceof Node ? h : String(h));
+  return e;
+};
+const coma = (x, d = 2) => x === null || x === undefined ? "—" : Number(x).toFixed(d).replace(".", ",");
+const fecha = ms => new Date(ms).toLocaleString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+
+async function llamar(op, extra = {}) {
+  const r = await fetch(API, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ accion: "admin", token, op, ...extra }) });
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error || "Error del servidor.");
+  datos = j; pintar(); return j;
+}
+function confirmarDosVeces(boton, texto, accion) {
+  boton.addEventListener("click", () => {
+    if (!boton.classList.contains("armed")) {
+      const antes = boton.textContent; boton.classList.add("armed"); boton.textContent = texto;
+      setTimeout(() => { if (boton.isConnected) { boton.classList.remove("armed"); boton.textContent = antes; } }, 4000);
+      return;
+    }
+    boton.disabled = true; accion().catch(e => alert(e.message));
+  });
+  return boton;
+}
+function pintar() {
+  const { usuarias, resultados, tablero } = datos;
+  $("resumen").textContent = `${usuarias.length} personas · ${resultados.length} resultados`;
+  poner($("tablero"), 
+    el("tr", {}, ["", "Mejor simulacro", "Media 5 últimos", "Esta semana", "Simulacros", "Total"].map(t => el("th", {}, t))),
+    tablero.map(t => el("tr", {}, el("td", {}, el("b", {}, t.nombre)), el("td", { class: "num" }, coma(t.mejor)), el("td", { class: "num" }, coma(t.media5)),
+      el("td", { class: "num" }, t.semana), el("td", { class: "num" }, t.simulacros), el("td", { class: "num" }, t.total))));
+  const cuenta = n => resultados.filter(r => r.nombre === n).length;
+  poner($("personas"), 
+    el("tr", {}, ["Nombre", "PIN", "Alta", "Resultados", ""].map(t => el("th", {}, t))),
+    usuarias.map(u => el("tr", {},
+      el("td", {}, el("b", {}, u.nombre)),
+      el("td", {}, el("span", { class: "pill " + (u.tienePin ? "ok" : "bad") }, u.tienePin ? "Sí" : "Sin crear")),
+      el("td", { class: "muted" }, fecha(u.alta)),
+      el("td", { class: "num" }, cuenta(u.nombre)),
+      el("td", {}, el("div", { class: "row", style: "justify-content:flex-end" },
+        u.tienePin ? confirmarDosVeces(el("button", { class: "btn" }, "Reiniciar PIN"), "¿Seguro? Pulsa otra vez", () => llamar("reiniciarPin", { nombre: u.nombre })) : null,
+        confirmarDosVeces(el("button", { class: "btn danger" }, "Borrar"), "Se borra todo. Pulsa otra vez", () => llamar("borrarUsuaria", { nombre: u.nombre })))))));
+  const f = $("filtro"), sel = f.value || "";
+  poner(f, el("option", { value: "" }, "Todas las personas"), usuarias.map(u => el("option", { value: u.nombre }, u.nombre)));
+  f.value = usuarias.some(u => u.nombre === sel) ? sel : "";
+  pintarResultados();
+}
+function filtrados() { const n = $("filtro").value; return datos.resultados.filter(r => !n || r.nombre === n); }
+function pintarResultados() {
+  const rs = filtrados();
+  poner($("resultados"), 
+    el("tr", {}, ["Fecha", "Persona", "Tipo", "Detalle", "Nota", "Aciertos", "Errores", "En blanco"].map(t => el("th", {}, t))),
+    rs.length ? rs.map(r => el("tr", {},
+      el("td", { class: "muted" }, fecha(r.fin)), el("td", {}, r.nombre), el("td", {}, r.tipo === "simulacro" ? "Simulacro" : "Test"),
+      el("td", { class: "muted" }, r.descr),
+      el("td", { class: "num" }, el("span", { class: "pill " + (r.aprobado ? "ok" : "bad") }, `${coma(r.nota)} / ${r.maximo}`)),
+      el("td", { class: "num" }, r.a ?? "—"), el("td", { class: "num" }, r.e ?? "—"), el("td", { class: "num" }, r.b ?? "—")))
+      : el("tr", {}, el("td", { colspan: "8", class: "muted" }, "Sin resultados todavía.")));
+}
+$("filtro").addEventListener("change", pintarResultados);
+$("csv").addEventListener("click", () => {
+  const q = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const filas = [["Fecha", "Persona", "Tipo", "Detalle", "Nota", "Sobre", "Superado", "Aciertos", "Errores", "En blanco", "Preguntas"],
+    ...filtrados().map(r => [fecha(r.fin), r.nombre, r.tipo, r.descr, String(r.nota).replace(".", ","), r.maximo, r.aprobado ? "sí" : "no", r.a, r.e, r.b, r.n])];
+  const csv = "﻿" + filas.map(f => f.map(q).join(";")).join("\r\n");   // ; y BOM: Excel en español lo abre bien
+  const a = el("a", { href: URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" })), download: `notas-${new Date().toISOString().slice(0, 10)}.csv` });
+  document.body.append(a); a.click(); a.remove();
+});
+async function entrar() {
+  token = $("clave").value.trim(); $("error").textContent = ""; $("entrar").disabled = true;
+  try {
+    await llamar("listar");
+    try { sessionStorage.setItem("oposicion.admin", token); } catch {}
+    $("login").classList.add("hidden"); $("panel").classList.remove("hidden");
+  } catch (e) { $("error").textContent = e.message === "Failed to fetch" ? "Sin conexión con el servidor." : e.message; }
+  $("entrar").disabled = false;
+}
+$("entrar").addEventListener("click", entrar);
+$("clave").addEventListener("keydown", e => { if (e.key === "Enter") entrar(); });
+$("salir").addEventListener("click", () => { try { sessionStorage.removeItem("oposicion.admin"); } catch {} location.reload(); });
+try { const t = sessionStorage.getItem("oposicion.admin"); if (t) { $("clave").value = t; entrar(); } } catch {}
+</script>
+</body>
+</html>

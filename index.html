@@ -191,9 +191,9 @@ footer{margin-top:48px;font-size:.8rem;color:var(--muted);text-align:center}
 "use strict";
 let DATA = null;
 const view = document.getElementById("view");
-// Almacén común: hoja de Google con un Apps Script (apps-script/Code.gs). Guarda usuarias, PIN,
-// resultados y el tablero. Este navegador solo guarda una copia y el test a medias.
-const API_REAL = "https://script.google.com/macros/s/AKfycbwT17MkyPWA_5rFy4t24WiNRFWGBjU0LcqtuloN72cB8aFSD5WxlMck6KkbH_WYaPFW/exec";
+// Almacén común: Cloudflare Workers + D1 (servidor/). Guarda usuarias, PIN, resultados y el
+// tablero. Este navegador solo guarda una copia y el test a medias.
+const API_REAL = "https://test-oposicion.fermentolactico.workers.dev/";
 const API = (["127.0.0.1", "localhost"].includes(location.hostname) && new URLSearchParams(location.search).get("api")) || API_REAL;
 let usuario = null, clave = null, USUARIAS = [], TABLERO = [];
 // Perfil de pruebas: no sale en el tablero ni entre las tarjetas; se entra con …/test-oposicion/?prueba
@@ -204,9 +204,9 @@ const K = {
   get usadas() { return `oposicion.${usuario}.usadas`; },
   get pendientes() { return `oposicion.${usuario}.pendientes`; },
 };
-// Google suele responder en 1,5-6 s, pero a veces se cuelga ~30 s y acaba en 404, o devuelve una
-// respuesta vacía: cada intento se corta a los 12 s y se reintenta. Repetir es seguro porque el
-// servidor no guarda dos veces el mismo resultado y el resto de acciones no duplican nada.
+// El servidor responde en ~0,15 s, pero la red del móvil puede fallar: cada intento se corta a los
+// 12 s y se reintenta. Repetir es seguro porque el servidor no guarda dos veces el mismo resultado
+// y el resto de acciones no duplican nada.
 async function pedir(url, opciones) {
   let ultimo;
   for (let intento = 0; intento < 4; intento++) {
@@ -225,11 +225,10 @@ async function pedir(url, opciones) {
   throw new Error("Sin conexión con el servidor.");
 }
 const api = datos => pedir(API, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(datos) });
-// Google tarda 3-7 s en responder: la web arranca con lo último que guardó este aparato
-// y se actualiza cuando llega la respuesta.
+// La web arranca con lo último que guardó este aparato y se actualiza cuando llega la respuesta,
+// así una red lenta no deja la pantalla en blanco.
 async function cargarEstado() {
-  // solo lectura: si Google tarda más de 4 s (arranque en frío), se lanza otra petición en paralelo
-  // y vale la primera que llegue
+  // solo lectura: si tarda más de 4 s, se lanza otra petición en paralelo y vale la primera que llegue
   const j = await new Promise((ok, ko) => {
     let fallos = 0, hecho = false;
     const lanzar = () => pedir(API + "?accion=estado").then(r => { if (!hecho) { hecho = true; ok(r); } }, e => { if (++fallos === 2) ko(e); });
@@ -742,7 +741,7 @@ function pantallaEspera() {
     el("h3", {}, "Preparando tus tests"),
     barraEspera(),
     mensajesRotando(el("p", { class: "muted small mensaje" })),
-    el("p", { class: "muted small", style: "margin-top:18px;opacity:.7" }, "La primera vez en este aparato puede tardar unos segundos."));
+    null);
 }
 function avatar(u, grande) { return el("span", { class: "avatar" + (grande ? " big" : ""), style: `--av:${colorDe(u)}` }, u.slice(0, 1).toUpperCase()); }
 

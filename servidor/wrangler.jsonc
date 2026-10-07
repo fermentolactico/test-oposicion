@@ -1,0 +1,14 @@
+{
+  // Servidor de notas de la web de tests (Cloudflare Workers + D1). Desplegar: npx wrangler deploy
+  "name": "test-oposicion",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-01",
+  "preview_urls": false,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "test-oposicion",
+      "database_id": "5f2e2f7a-cd7d-48be-870a-6aa5f0037f7f"
+    }
+  ]
+}
