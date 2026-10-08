@@ -52,7 +52,7 @@ for p in banco:
     else:
         cuenta[("Generadas para el temario 2026", "Preguntas nuevas por tema (verificadas con la ley)")] += 1
 ORDEN = ["Exámenes oficiales del IB-Salut", "Exámenes oficiales de otras administraciones", "Academias", "Generadas para el temario 2026"]
-origenes = [dict(grupo=g, fuente=f + (f" ({', '.join(sorted(examenes[f]))})" if f in examenes else ""), n=n)
+origenes = [dict(grupo=g, fuente=f + (": " + " · ".join(sorted(examenes[f])) if f in examenes else ""), n=n)
             for (g, f), n in sorted(cuenta.items(), key=lambda x: (ORDEN.index(x[0][0]), -x[1]))]
 
 datos = dict(
