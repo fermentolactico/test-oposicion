@@ -195,6 +195,42 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
 .mini{height:8px;border-radius:8px;background:var(--surface-2);overflow:hidden}
 .mini i{display:block;height:100%;border-radius:8px;transition:width .4s}
 .puesto{display:inline-block;min-width:1.6em}
+.como{margin-top:32px}
+.como>h3{font-size:1.1rem;margin-bottom:4px}
+.como>.intro{margin:0 0 14px;color:var(--muted);font-size:.92rem}
+.como-grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.paso{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
+.paso .ico{width:38px;height:38px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;margin-bottom:10px}
+.paso .ico svg{width:20px;height:20px}
+.paso h4{margin:0 0 6px;font-size:1rem}
+.paso p{margin:0 0 10px;font-size:.88rem;color:var(--muted);line-height:1.5}
+.paso p b{color:var(--ink);font-weight:600}
+.escalera{list-style:none;padding:0;margin:4px 0 0;counter-reset:e}
+.escalera li{display:flex;gap:10px;align-items:center;font-size:.86rem;padding:4px 0}
+.escalera li::before{counter-increment:e;content:counter(e);flex:none;width:22px;height:22px;border-radius:7px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-size:.72rem;font-weight:700}
+.escalera li span{margin-left:auto;color:var(--muted);font-variant-numeric:tabular-nums;font-size:.8rem}
+.pesos{margin-top:6px}
+.pesos .fila{display:grid;grid-template-columns:64px 1fr 44px;gap:8px;align-items:center;font-size:.8rem;margin:6px 0}
+.pesos .fila>span:last-child{text-align:right;font-variant-numeric:tabular-nums}
+.pbar{display:block;height:8px;border-radius:8px;background:var(--surface-2);overflow:hidden}
+.pbar>i{display:block;height:100%;border-radius:8px;background:var(--accent)}
+.pesos .fila.t26 .pbar>i{background:var(--nuevo)}
+.reparto{display:flex;height:12px;border-radius:8px;overflow:hidden;margin:4px 0 6px}
+.reparto>i{display:block;height:100%;background:var(--accent)}
+.reparto>i.t26{background:var(--nuevo)}
+.pley{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:.76rem;color:var(--muted);margin-bottom:12px}
+.pley>span{white-space:nowrap}
+.pley i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px;background:var(--accent)}
+.pley i.t26{background:var(--nuevo)}
+.paso.ancho{grid-column:1/-1}
+.sim-grid{display:grid;gap:8px 28px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+.subt{margin:0 0 6px;font-size:.82rem;font-weight:600;color:var(--ink)}
+.como{--nuevo:#b5642c}
+:root[data-theme="dark"] .como{--nuevo:#e0955c}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .como{--nuevo:#e0955c}}
+.cuentas{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:4px 0 10px}
+.cuentas div{background:var(--surface-2);border-radius:10px;padding:8px 6px;text-align:center;font-size:.74rem;color:var(--muted);line-height:1.3}
+.cuentas b{display:block;font-size:1.05rem;color:var(--ink);font-variant-numeric:tabular-nums}
 .origenes{margin-top:28px;overflow-x:auto}
 .origenes h3{font-size:1.1rem;margin-bottom:10px}
 .origenes table{width:100%;border-collapse:collapse;font-size:.9rem}
@@ -438,6 +474,7 @@ function inicio() {
         el("span", { class: "pill " + (h.aprobado ? "ok" : "bad") }, coma(h.nota) + " / " + h.maximo))))) : null,
     leer(K.pendientes, []).length ? el("p", { class: "muted small" }, "Hay resultados pendientes de enviar: se mandarán en cuanto haya conexión.") : null,
     hist.length || leer(K.usadas, []).length ? el("div", { class: "row", style: "margin-top:8px" }, botonBorrar()) : null,
+    vistaComo(),
     vistaOrigenes()
   );
 }
@@ -652,6 +689,71 @@ function resultado(ex) {
 }
 
 // ---------- origen de las preguntas (lo calcula exportar.py) ----------
+// ---------- cómo funciona ----------
+// Explicación para las usuarias: de dónde salen las preguntas, cómo se arma cada test y cómo se
+// puntúa. Los números salen de DATA, así que se actualizan solos al añadir preguntas.
+function vistaComo() {
+  const R = DATA.reglas, P = DATA.preguntas, n = x => x.toLocaleString("es-ES");
+  const cuenta = f => P.filter(f).length;
+  const ib = cuenta(p => p.of && !p.x), otras = cuenta(p => p.x), acad = cuenta(p => !p.of && !p.g), gen = cuenta(p => p.g);
+  const repetidas = cuenta(p => p.r > 0);
+  const nuevos = new Set(DATA.nuevos || []);
+  const pesos = Object.entries(DATA.pesos || {}).map(([t, w]) => [Number(t), w + 1]);
+  const total = pesos.reduce((s, [, w]) => s + w, 0) || 1;
+  const top = [...pesos].sort((a, b) => b[1] - a[1]).slice(0, 8), max = top.length ? top[0][1] : 1;
+  const pctNuevos = Math.round(100 * pesos.filter(([t]) => nuevos.has(t)).reduce((s, [, w]) => s + w, 0) / total);
+  const acierto = R.maximo / R.preguntas;
+  const ico = {
+    banco: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9 7h7M9 11h5"/>',
+    reparto: '<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/>',
+    nota: '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+  };
+  return el("section", { class: "como" },
+    el("h3", {}, "Cómo funciona"),
+    el("p", { class: "intro" }, "Cada test se arma en el momento a partir de un banco de preguntas del temario de la convocatoria (BOIB 72/2026, temas 11 a 70), con la normativa vigente el 9 de junio de 2026."),
+    el("div", { class: "como-grid" },
+      el("div", { class: "paso" },
+        el("div", { class: "ico" }, icono(ico.banco)),
+        el("h4", {}, "Las preguntas"),
+        el("div", { class: "cuentas" },
+          el("div", {}, el("b", {}, n(ib + otras)), "de exámenes oficiales"),
+          el("div", {}, el("b", {}, n(acad)), "de academias"),
+          el("div", {}, el("b", {}, n(gen)), "nuevas del temario 2026")),
+        el("p", {}, el("b", {}, "Oficiales: "), `${n(ib)} de exámenes del IB-Salut y ${n(otras)} de otras administraciones (detalladas en la tabla de abajo). De las de fuera solo entran las que tratan un tema del temario y cuya respuesta sigue valiendo con la ley de hoy: cada una se ha comprobado con su artículo.`),
+        el("p", {}, el("b", {}, "Nuevas: "), "preguntas escritas para los temas que el tribunal aún no ha preguntado, comprobadas con el texto de la ley."),
+        el("p", { style: "margin:0" }, "Si una pregunta está repetida en varias fuentes, solo cuenta una vez.")),
+      el("div", { class: "paso" },
+        el("div", { class: "ico" }, icono(ico.nota)),
+        el("h4", {}, "Cómo se puntúa"),
+        el("p", {}, el("b", {}, "Simulacro: "), `como en la convocatoria, según ${R.cita}. Nota sobre ${R.maximo}: cada acierto suma ${coma(acierto)}, cada error resta la cuarta parte (${coma(acierto / 4, 3)}) y en blanco no cuenta. Se aprueba con ${R.minimo}. Las de reserva no puntúan.`),
+        el("p", {}, el("b", {}, "Test de estudio: "), "la misma regla, con nota sobre 10 y aprobado en 5."),
+        el("p", {}, el("b", {}, "Tiempo: "), `${R.minutos} minutos en el simulacro y la parte proporcional en los tests. Si te pasas, no se corta: se apunta el tiempo de más.`),
+        el("p", { style: "margin:0" }, "Al corregir verás la nota, el reparto por temas y la respuesta buena de cada pregunta, y podrás descargar el test y las respuestas en PDF.")),
+      el("div", { class: "paso ancho" },
+        el("div", { class: "ico" }, icono(ico.reparto)),
+        el("h4", {}, "Cómo se arma un simulacro"),
+        el("p", {}, `${R.preguntas} preguntas y ${R.reserva} de reserva. Cada tema sale tanto como lo pregunta el tribunal: cuentan los exámenes oficiales del IB-Salut, los de gestión A2 valen doble y las preguntas que el tribunal ha repetido suman otra vez. Los temas nuevos de 2026, que el tribunal aún no ha podido preguntar, pesan como mínimo lo que un tema medio.`),
+        el("div", { class: "sim-grid" },
+          el("div", { class: "pesos" },
+            el("p", { class: "subt" }, "Reparto esperado del simulacro"),
+            el("div", { class: "reparto", role: "img", "aria-label": `${100 - pctNuevos} % temas con historial, ${pctNuevos} % temas nuevos` },
+              el("i", { style: `width:${100 - pctNuevos}%` }), el("i", { class: "t26", style: `width:${pctNuevos}%` })),
+            el("div", { class: "pley" }, el("span", {}, el("i", {}), `Temas con historial · ${100 - pctNuevos} %`), el("span", {}, el("i", { class: "t26" }), `Nuevos en 2026 · ${pctNuevos} %`)),
+            el("p", { class: "subt" }, "Los temas que más salen"),
+            top.map(([t, w]) => el("div", { class: "fila" + (nuevos.has(t) ? " t26" : "") },
+              el("span", {}, "Tema " + t), el("span", { class: "pbar" }, el("i", { style: `width:${Math.round(100 * w / max)}%` })),
+              el("span", { class: "muted" }, coma(100 * w / total, 1) + " %")))),
+          el("div", {},
+            el("p", { class: "subt" }, "Dentro de cada tema, por este orden"),
+            el("ol", { class: "escalera" },
+              el("li", {}, "Las que el tribunal ha repetido", el("span", {}, n(repetidas))),
+              el("li", {}, "El resto de oficiales del IB-Salut", el("span", {}, n(ib - repetidas))),
+              el("li", {}, "Oficiales de otras administraciones", el("span", {}, n(otras))),
+              el("li", {}, "Academias", el("span", {}, n(acad))),
+              el("li", {}, "Nuevas del temario 2026", el("span", {}, n(gen)))),
+            el("p", { style: "margin:12px 0 0" }, "Un simulacro no repite preguntas de los anteriores hasta que se agota el banco. El test de estudio, en cambio, saca preguntas al azar de los temas que elijas, repartidas entre ellos."))))));
+}
+
 function vistaOrigenes() {
   const os = DATA.origenes || [];
   if (!os.length) return null;
@@ -1158,6 +1260,7 @@ function entrada() {
         el("span", { class: "avatar big plus" }, "+"), el("b", {}, "Añadir"), el("span", { class: "muted small" }, "otra persona")) : null),
     formNuevo,
     el("div", { style: "margin-top:28px" }, vistaTablero()),
+    vistaComo(),
     vistaOrigenes()
   );
 }

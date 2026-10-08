@@ -60,6 +60,7 @@ datos = dict(
     administraciones=administraciones,
     preguntas=preguntas,
     pesos={str(t): n for t, n in sorted(pesos.items())},
+    nuevos=sorted(examen._temas_nuevos()),
     reglas=dict(maximo=examen.MAXIMO, minimo=examen.MINIMO, preguntas=examen.PREGUNTAS,
                 reserva=examen.RESERVA, minutos=examen.MINUTOS, cita=examen.CITA),
 )
