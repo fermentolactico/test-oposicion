@@ -18,14 +18,18 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   const esperar = async (p, fn, ms = 25000, arg) => { const t = Date.now(); while (Date.now() - t < ms) { if (await p.evaluate(fn, arg)) return true; await sleep(200); } return false; };
   const boton = (p, texto) => p.evaluate(t => { const b = [...document.querySelectorAll("button")].filter(b => b.textContent.trim() === t && !b.disabled).pop(); if (!b) throw new Error("no hay botón " + t); b.click(); }, texto);
   const teclea = async (p, pin) => { for (const d of pin) await p.evaluate(d => [...document.querySelectorAll(".key")].find(k => k.textContent === d).click(), d); };
+  const llamar = d => fetch(API, { method: "POST", headers: { "Content-Type": "text/plain", "Origin": "http://127.0.0.1:8765", "User-Agent": "Mozilla/5.0 Chrome/140" },
+    body: JSON.stringify(d) }).then(r => r.json());
   const entrarComo = async (p, nombre, pin, nueva) => {
-    if (nueva) { await p.evaluate(() => document.querySelector(".perfil.add").click()); await p.type(".nombre", nombre); await boton(p, "Continuar");
-      await esperar(p, () => !!document.querySelector(".pinbox")); await teclea(p, pin); await sleep(300); }
-    else await p.evaluate(n => [...document.querySelectorAll(".perfil")].find(x => x.textContent.includes(n)).click(), nombre);
+    await p.evaluate(n => [...document.querySelectorAll(".perfil")].find(x => x.textContent.includes(n)).click(), nombre);
+    if (nueva) { await esperar(p, () => !!document.querySelector(".pinbox")); await teclea(p, pin); await sleep(300); }
     await teclea(p, pin); await esperar(p, () => !!document.querySelector(".choice"));
   };
   try {
-    // personas temporales
+    // la web solo deja entrar a Ana, Georgina, Carmen y Prueba: un nombre cualquiera se rechaza…
+    log.extrañaRechazada = (await llamar({ accion: "nueva", nombre: "Extraña" })).error || "NO SE HA RECHAZADO";
+    // …y las personas temporales se dan de alta con la contraseña de admin
+    for (const n of ["Zeta", "Yeta"]) log["alta" + n] = (await llamar({ accion: "nueva", nombre: n, token: ADMIN })).ok;
     const B = await abrir(BASE); await entrarComo(B, "Zeta", "1357", true);
     const C = await abrir(BASE); await entrarComo(C, "Yeta", "2468", true);
     // Prueba crea el reto: test de 5 preguntas del tema 26, invita a Zeta y Yeta
@@ -82,8 +86,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   } finally {
     // limpieza: borrar a las personas temporales
     if (ADMIN) for (const n of ["Zeta", "Yeta"])
-      await fetch(API, { method: "POST", headers: { "Content-Type": "text/plain", "Origin": "http://127.0.0.1:8765", "User-Agent": "Mozilla/5.0 Chrome/140" },
-        body: JSON.stringify({ accion: "admin", token: ADMIN, op: "borrarUsuaria", nombre: n }) }).catch(() => {});
+      await llamar({ accion: "admin", token: ADMIN, op: "borrarUsuaria", nombre: n }).catch(() => {});
     log.err = err;
     console.log(JSON.stringify(log, null, 1));
     await browser.close();

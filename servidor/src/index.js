@@ -2,7 +2,7 @@
  * Servidor de notas de la web de tests (Cloudflare Workers + D1).
  * Contesta igual que el Apps Script anterior, así la web solo cambia de dirección:
  *   GET  ?accion=estado                      → usuarias y tablero (público)
- *   POST {accion:"nueva", nombre}            → alta (máximo 5, sin contar «Prueba»)
+ *   POST {accion:"nueva", nombre[, token]}   → alta: solo Ana, Georgina y Carmen (y «Prueba»); cualquier otro nombre exige el secreto ADMIN (personas temporales de las pruebas)
  *   POST {accion:"crearPin", nombre, clave}  → primer PIN
  *   POST {accion:"entrar"|"guardar"|"borrar", nombre, clave, …}
  *   POST {accion:"admin", token, op, …}      → página de administración (secreto ADMIN)
@@ -12,6 +12,7 @@
  * Cinco fallos seguidos bloquean a esa persona 15 minutos.
  */
 const PRUEBA = "Prueba";
+const PERMITIDAS = ["Ana", "Georgina", "Carmen"];   // Nadal, 08/10/2026: la web es solo para ellas
 const MAX_USUARIAS = 5, MAX_FALLOS = 5, BLOQUEO_MS = 15 * 60 * 1000;
 const ORIGENES = ["https://fermentolactico.github.io", "http://127.0.0.1:8765", "http://localhost:8765"];
 
@@ -42,7 +43,7 @@ export default {
 
 async function accion(env, d) {
   switch (d.accion) {
-    case "nueva": return nueva(env, d.nombre);
+    case "nueva": return nueva(env, d.nombre, d.token);
     case "crearPin": return crearPin(env, d.nombre, d.clave);
     case "entrar": await comprobar(env, d.nombre, d.clave); return { ok: true, historial: await historial(env, d.nombre), usadas: await usadas(env, d.nombre) };
     case "guardar": await comprobar(env, d.nombre, d.clave); return guardar(env, d.nombre, d.resultado, d.usadas);
@@ -82,8 +83,10 @@ function lunesMadrid(ahora) {
 }
 
 // ---------- usuarias y PIN ----------
-async function nueva(env, nombre) {
+async function nueva(env, nombre, token) {
   nombre = limpiaNombre(nombre);
+  if (!PERMITIDAS.includes(nombre) && nombre !== PRUEBA && !(env.ADMIN && token === env.ADMIN))
+    throw new Error("Esta web es solo para Ana, Georgina y Carmen.");
   if (await env.DB.prepare("SELECT 1 FROM usuarias WHERE nombre = ?").bind(nombre).first()) return { ok: true };
   const { n } = await env.DB.prepare("SELECT COUNT(*) AS n FROM usuarias WHERE nombre != ?").bind(PRUEBA).first();
   if (nombre !== PRUEBA && n >= MAX_USUARIAS) throw new Error(`Ya hay ${MAX_USUARIAS} personas.`);
