@@ -195,6 +195,14 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
 .mini{height:8px;border-radius:8px;background:var(--surface-2);overflow:hidden}
 .mini i{display:block;height:100%;border-radius:8px;transition:width .4s}
 .puesto{display:inline-block;min-width:1.6em}
+.origenes{margin-top:28px;overflow-x:auto}
+.origenes h3{font-size:1.1rem;margin-bottom:10px}
+.origenes table{width:100%;border-collapse:collapse;font-size:.9rem}
+.origenes td{padding:7px 6px;border-top:1px solid var(--line);vertical-align:top}
+.origenes td:nth-child(2),.origenes td:nth-child(3){text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.origenes tr.grupo td{font-weight:600;background:var(--surface-2)}
+.origenes td.fuente{padding-left:18px;color:var(--muted)}
+.origenes tr.total td{font-weight:700;border-top:2px solid var(--ink)}
 .btn.danger{color:var(--bad)}
 .btn.danger.armed{background:var(--bad);border-color:var(--bad);color:#fff}
 footer{margin-top:48px;font-size:.8rem;color:var(--muted);text-align:center}
@@ -426,7 +434,8 @@ function inicio() {
         el("span", {}, el("b", {}, h.tipo === "simulacro" ? "Simulacro" : "Test"), " ", el("span", { class: "muted" }, "· " + h.desc + " · " + fecha(h.fin))),
         el("span", { class: "pill " + (h.aprobado ? "ok" : "bad") }, coma(h.nota) + " / " + h.maximo))))) : null,
     leer(K.pendientes, []).length ? el("p", { class: "muted small" }, "Hay resultados pendientes de enviar: se mandarán en cuanto haya conexión.") : null,
-    hist.length || leer(K.usadas, []).length ? el("div", { class: "row", style: "margin-top:8px" }, botonBorrar()) : null
+    hist.length || leer(K.usadas, []).length ? el("div", { class: "row", style: "margin-top:8px" }, botonBorrar()) : null,
+    vistaOrigenes()
   );
 }
 
@@ -637,6 +646,27 @@ function resultado(ex) {
     el("div", { class: "filters" }, filtros),
     lista
   );
+}
+
+// ---------- origen de las preguntas (lo calcula exportar.py) ----------
+function vistaOrigenes() {
+  const os = DATA.origenes || [];
+  if (!os.length) return null;
+  const total = os.reduce((s, o) => s + o.n, 0);
+  const grupos = [...new Set(os.map(o => o.grupo))];
+  const n = x => x.toLocaleString("es-ES");
+  return el("section", { class: "card origenes" },
+    el("h3", {}, "De dónde salen las preguntas"),
+    el("table", {}, el("tbody", {},
+      grupos.map(g => {
+        const filas = os.filter(o => o.grupo === g), sub = filas.reduce((s, o) => s + o.n, 0);
+        return [
+          el("tr", { class: "grupo" }, el("td", {}, g), el("td", {}, n(sub)), el("td", { class: "muted" }, Math.round(100 * sub / total) + " %")),
+          filas.map(o => el("tr", {}, el("td", { class: "fuente" }, o.fuente), el("td", {}, n(o.n)), el("td", {}, "")))
+        ];
+      }),
+      el("tr", { class: "total" }, el("td", {}, "Total"), el("td", {}, n(total)), el("td", {}, "")))),
+    el("p", { class: "muted small", style: "margin:10px 0 0" }, "Solo cuentan las preguntas que pueden salir en los tests: con respuesta, de los temas 11 a 70 y sin repetidas."));
 }
 
 // ---------- retos en grupo ----------
@@ -1124,7 +1154,8 @@ function entrada() {
       quedanHuecos ? el("button", { class: "perfil add", onclick: () => { formNuevo.classList.remove("hidden"); nuevo.focus(); } },
         el("span", { class: "avatar big plus" }, "+"), el("b", {}, "Añadir"), el("span", { class: "muted small" }, "otra persona")) : null),
     formNuevo,
-    el("div", { style: "margin-top:28px" }, vistaTablero())
+    el("div", { style: "margin-top:28px" }, vistaTablero()),
+    vistaOrigenes()
   );
 }
 
