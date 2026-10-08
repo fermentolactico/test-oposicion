@@ -127,14 +127,11 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
 @media (max-width:520px){header.top:has(#quien .chip) .brand b{display:none}header.top{margin-bottom:18px}.bar{padding:10px 16px;margin-bottom:14px}.bar .inner{gap:8px}.q{padding:14px}.q .head{gap:10px}.hero h1{margin-bottom:4px}}
 .avatar{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--av);color:#fff;font-weight:600;font-size:.85rem;flex:none}
 .avatar.big{width:64px;height:64px;font-size:1.6rem;font-family:Fraunces,serif}
-.avatar.plus{background:var(--surface-2);color:var(--muted);border:2px dashed var(--line)}
 .chip{display:inline-flex;align-items:center;gap:8px;font-weight:600}
 .perfiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;max-width:640px;margin:8px auto 0}
 .perfil{display:flex;flex-direction:column;align-items:center;gap:8px;padding:22px 12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);color:var(--ink);transition:transform .15s,border-color .15s}
 .perfil:hover{transform:translateY(-2px);border-color:var(--accent)}
 .perfil b{font-size:1.05rem}
-.nuevo{max-width:420px;margin:18px auto 0}
-.nombre{flex:1;min-width:0;font:inherit;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
 .pinwrap{display:grid;place-items:center;min-height:60vh}
 .pinbox{width:100%;max-width:340px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}
 .pinbox h2{margin-top:10px;font-size:1.4rem}
@@ -1238,27 +1235,11 @@ function vistaTablero() {
 
 function entrada() {
   pararReloj();
-  const nuevo = el("input", { class: "nombre", placeholder: "Nombre", maxlength: "30", "aria-label": "Nombre" });
-  const avisoNuevo = el("p", { class: "muted small" });
-  const formNuevo = el("div", { class: "card nuevo hidden" },
-    el("b", {}, "Nueva persona"),
-    el("div", { class: "row", style: "margin-top:10px" }, nuevo,
-      el("button", { class: "btn primary", onclick: async ev => {
-        const n = nuevo.value.trim().replace(/\s+/g, " ").slice(0, 30);
-        if (!n) return;
-        ev.target.disabled = true;
-        try { await api({ accion: "nueva", nombre: n }); await cargarEstado(); pedirPin(n); }
-        catch (err) { avisoNuevo.textContent = err.message; ev.target.disabled = false; }
-      } }, "Continuar")), avisoNuevo);
-  const quedanHuecos = USUARIAS.filter(u => u.nombre !== PRUEBA).length < 5;
   pintar(
     el("section", { class: "hero center" }, el("h1", {}, "¿Quién eres?"), el("p", {}, "Cada una tiene sus resultados y su PIN, desde cualquier aparato.")),
     el("div", { class: "perfiles" },
       USUARIAS.map(u => el("button", { class: "perfil", onclick: () => pedirPin(u.nombre) }, avatar(u.nombre, true), el("b", {}, u.nombre),
-        el("span", { class: "muted small" }, u.tienePin ? "Con PIN" : "Primera vez"))),
-      quedanHuecos ? el("button", { class: "perfil add", onclick: () => { formNuevo.classList.remove("hidden"); nuevo.focus(); } },
-        el("span", { class: "avatar big plus" }, "+"), el("b", {}, "Añadir"), el("span", { class: "muted small" }, "otra persona")) : null),
-    formNuevo,
+        el("span", { class: "muted small" }, u.tienePin ? "Con PIN" : "Primera vez")))),
     el("div", { style: "margin-top:28px" }, vistaTablero()),
     vistaComo(),
     vistaOrigenes()
@@ -1340,8 +1321,8 @@ fetch("preguntas.json", { cache: "no-cache" }).then(r => r.json()).then(d => {
   if (estadoGuardado()) {
     arrancar(true);
     estadoListo.then(() => {
-      // en la entrada se repinta (salvo si está escribiendo un nombre nuevo); dentro, solo el tablero
-      if (view.querySelector(".perfiles") && view.querySelector(".nuevo.hidden")) entrada(); else refrescarTablero();
+      // en la entrada se repinta; dentro, solo el tablero
+      if (view.querySelector(".perfiles")) entrada(); else refrescarTablero();
     }, () => {});
   } else {
     view.replaceChildren(pantallaEspera());
