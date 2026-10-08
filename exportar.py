@@ -37,22 +37,22 @@ def ficha(origen, campo):
     f = examen.BANCO.parent / origen.split("#")[0]
     m = re.search(rf"^- \*\*{campo}:\*\* (.+)$", f.read_text(encoding="utf8").split("### Pregunta", 1)[0], re.M)
     return m.group(1).strip() if m else ""
-cuenta, examenes = collections.Counter(), {}
+cuenta = collections.Counter()
 for p in banco:
     carpeta = p["origen"].split("/")[1]
     if carpeta == "oficiales":
         cuenta[("Exámenes oficiales del IB-Salut", titulo(p["origen"]))] += 1
     elif carpeta == "oficiales-otras":
         adm = p["administracion"] or "Sin indicar"
-        cuenta[("Exámenes oficiales de otras administraciones", adm)] += 1
-        examenes.setdefault(adm, set()).add(ficha(p["origen"], "Examen") or titulo(p["origen"]))
+        # una fila por examen (los modelos A, B y C de un mismo examen se suman)
+        cuenta[("Exámenes oficiales de otras administraciones", adm + ": " + (ficha(p["origen"], "Examen") or titulo(p["origen"])))] += 1
     elif carpeta == "academias":
         nombre = p["origen"].split("/")[2]
         cuenta[("Academias", "Benet Rubert" if nombre.startswith("benet") else "Xisco" if nombre.startswith("xisco") else "Otras academias")] += 1
     else:
         cuenta[("Generadas para el temario 2026", "Preguntas nuevas por tema (verificadas con la ley)")] += 1
 ORDEN = ["Exámenes oficiales del IB-Salut", "Exámenes oficiales de otras administraciones", "Academias", "Generadas para el temario 2026"]
-origenes = [dict(grupo=g, fuente=f + (": " + " · ".join(sorted(examenes[f])) if f in examenes else ""), n=n)
+origenes = [dict(grupo=g, fuente=f, n=n)
             for (g, f), n in sorted(cuenta.items(), key=lambda x: (ORDEN.index(x[0][0]), -x[1]))]
 
 datos = dict(
