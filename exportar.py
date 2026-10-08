@@ -16,9 +16,11 @@ import examen  # noqa: E402
 
 rep, pesos = examen._tribunal()
 banco = examen.banco()
+# Oficiales de otras administraciones: cada pregunta apunta (x = posición + 1) a la lista de administraciones
+administraciones = sorted({p["administracion"] or "Sin indicar" for p in banco if p["otra"]})
 preguntas = [
     dict(id=p["origen"], t=p["tema"], e=p["enunciado"], o=p["opciones"], c="abcd".index(p["correcta"]),
-         of=int(p["oficial"]), r=rep.get(p["origen"], 0), g=int(p["generada"]), **({"x": 1} if p["otra"] else {}))
+         of=int(p["oficial"]), r=rep.get(p["origen"], 0), g=int(p["generada"]), **({"x": administraciones.index(p["administracion"] or "Sin indicar") + 1} if p["otra"] else {}))
     for p in banco
 ]
 # Origen del banco, para la tabla de la web: por tipo de fuente y, dentro, por examen o academia.
@@ -31,24 +33,31 @@ def titulo(origen):
     t = re.sub(r"^(Examen|Test)\s+", "", t)
     año = re.match(r"(\d{4})-", f.name)
     return t + (f" ({año.group(1)})" if año and año.group(1) not in t else "")
-cuenta = collections.Counter()
+def ficha(origen, campo):
+    f = examen.BANCO.parent / origen.split("#")[0]
+    m = re.search(rf"^- \*\*{campo}:\*\* (.+)$", f.read_text(encoding="utf8").split("### Pregunta", 1)[0], re.M)
+    return m.group(1).strip() if m else ""
+cuenta, examenes = collections.Counter(), {}
 for p in banco:
     carpeta = p["origen"].split("/")[1]
     if carpeta == "oficiales":
         cuenta[("Exámenes oficiales del IB-Salut", titulo(p["origen"]))] += 1
     elif carpeta == "oficiales-otras":
-        t = re.sub(r"^del\s+", "", titulo(p["origen"]))
-        cuenta[("Exámenes oficiales de otras administraciones", t[:1].upper() + t[1:])] += 1
+        adm = p["administracion"] or "Sin indicar"
+        cuenta[("Exámenes oficiales de otras administraciones", adm)] += 1
+        examenes.setdefault(adm, set()).add(ficha(p["origen"], "Examen") or titulo(p["origen"]))
     elif carpeta == "academias":
         nombre = p["origen"].split("/")[2]
         cuenta[("Academias", "Benet Rubert" if nombre.startswith("benet") else "Xisco" if nombre.startswith("xisco") else "Otras academias")] += 1
     else:
         cuenta[("Generadas para el temario 2026", "Preguntas nuevas por tema (verificadas con la ley)")] += 1
 ORDEN = ["Exámenes oficiales del IB-Salut", "Exámenes oficiales de otras administraciones", "Academias", "Generadas para el temario 2026"]
-origenes = [dict(grupo=g, fuente=f, n=n) for (g, f), n in sorted(cuenta.items(), key=lambda x: (ORDEN.index(x[0][0]), -x[1]))]
+origenes = [dict(grupo=g, fuente=f + (f" ({', '.join(sorted(examenes[f]))})" if f in examenes else ""), n=n)
+            for (g, f), n in sorted(cuenta.items(), key=lambda x: (ORDEN.index(x[0][0]), -x[1]))]
 
 datos = dict(
     origenes=origenes,
+    administraciones=administraciones,
     preguntas=preguntas,
     pesos={str(t): n for t, n in sorted(pesos.items())},
     reglas=dict(maximo=examen.MAXIMO, minimo=examen.MINIMO, preguntas=examen.PREGUNTAS,

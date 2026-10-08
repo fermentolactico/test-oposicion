@@ -331,7 +331,7 @@ function elegir(temas, cuantas, simulacro, excluir) {
     barajar(porTema[t]);
     if (simulacro) porTema[t].sort((a, b) => {
       const A = DATA.preguntas[a], B = DATA.preguntas[b];
-      return (B.r - A.r) || (B.of - A.of) || ((A.x || 0) - (B.x || 0)) || (A.g - B.g);
+      return (B.r - A.r) || (B.of - A.of) || (!!A.x - !!B.x) || (A.g - B.g);
     });
   }
   const elegidas = [];
@@ -609,7 +609,7 @@ function resultado(ex) {
       el("div", { class: "opts" }, p.o.map((txt, j) => el("button", {
         class: "opt" + (j === p.c ? " good" : j === m ? " wrong" : ""), disabled: true
       }, el("span", { class: "l" }, "abcd"[j]), el("span", {}, txt)))),
-      el("div", { class: "meta" }, el("span", {}, "Tema " + p.t), p.of ? el("span", {}, p.x ? "· Examen oficial de otra administración" : "· Examen oficial") : null,
+      el("div", { class: "meta" }, el("span", {}, "Tema " + p.t), p.of ? el("span", {}, p.x ? "· Examen oficial: " + ((DATA.administraciones || [])[p.x - 1] || "otra administración") : "· Examen oficial") : null,
         m === undefined ? el("span", {}, "· En blanco") : null, k >= ex.n ? el("span", {}, "· Reserva (no puntúa)") : null));
     return [k === ex.n && ex.reserva ? el("div", { class: "reserva-sep" }, `Preguntas de reserva (${ex.n + 1}-${total})`) : null, art];
   });
