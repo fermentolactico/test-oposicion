@@ -18,7 +18,7 @@ rep, pesos = examen._tribunal()
 banco = examen.banco()
 preguntas = [
     dict(id=p["origen"], t=p["tema"], e=p["enunciado"], o=p["opciones"], c="abcd".index(p["correcta"]),
-         of=int(p["oficial"]), r=rep.get(p["origen"], 0), g=int(p["generada"]))
+         of=int(p["oficial"]), r=rep.get(p["origen"], 0), g=int(p["generada"]), **({"x": 1} if p["otra"] else {}))
     for p in banco
 ]
 # Origen del banco, para la tabla de la web: por tipo de fuente y, dentro, por examen o academia.
@@ -36,12 +36,15 @@ for p in banco:
     carpeta = p["origen"].split("/")[1]
     if carpeta == "oficiales":
         cuenta[("Exámenes oficiales del IB-Salut", titulo(p["origen"]))] += 1
+    elif carpeta == "oficiales-otras":
+        t = re.sub(r"^del\s+", "", titulo(p["origen"]))
+        cuenta[("Exámenes oficiales de otras administraciones", t[:1].upper() + t[1:])] += 1
     elif carpeta == "academias":
         nombre = p["origen"].split("/")[2]
         cuenta[("Academias", "Benet Rubert" if nombre.startswith("benet") else "Xisco" if nombre.startswith("xisco") else "Otras academias")] += 1
     else:
         cuenta[("Generadas para el temario 2026", "Preguntas nuevas por tema (verificadas con la ley)")] += 1
-ORDEN = ["Exámenes oficiales del IB-Salut", "Academias", "Generadas para el temario 2026"]
+ORDEN = ["Exámenes oficiales del IB-Salut", "Exámenes oficiales de otras administraciones", "Academias", "Generadas para el temario 2026"]
 origenes = [dict(grupo=g, fuente=f, n=n) for (g, f), n in sorted(cuenta.items(), key=lambda x: (ORDEN.index(x[0][0]), -x[1]))]
 
 datos = dict(
