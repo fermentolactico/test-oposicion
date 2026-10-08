@@ -132,6 +132,8 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
 .perfil{display:flex;flex-direction:column;align-items:center;gap:8px;padding:22px 12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);color:var(--ink);transition:transform .15s,border-color .15s}
 .perfil:hover{transform:translateY(-2px);border-color:var(--accent)}
 .perfil b{font-size:1.05rem}
+/* en el teléfono, las tres personas en una sola fila */
+@media (max-width:520px){.perfiles:not(.izq){grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.perfiles:not(.izq) .perfil{padding:16px 6px}.perfiles:not(.izq) .avatar.big{width:52px;height:52px;font-size:1.3rem}}
 .pinwrap{display:grid;place-items:center;min-height:60vh}
 .pinbox{width:100%;max-width:340px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}
 .pinbox h2{margin-top:10px;font-size:1.4rem}
