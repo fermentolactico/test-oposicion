@@ -314,7 +314,9 @@ function rangos(ts) {
 }
 
 // ---------- elegir preguntas: las mismas reglas que examen.py del tutor ----------
-// Simulacro: dentro de cada tema, primero las oficiales repetidas por el tribunal, luego el resto de
+// Simulacro: el peso de cada tema lo da examen.py (_tribunal): preguntas oficiales, las de gestión A2
+// doble, las repetidas otra vez y los temas nuevos de 2026 al menos como un tema medio.
+// Dentro de cada tema, primero las oficiales repetidas por el tribunal, luego el resto de
 // oficiales, las de academia y las generadas; cada tema sale tanto como en los exámenes oficiales (+1).
 // Test de estudio: al azar y por turnos entre los temas elegidos.
 function elegir(temas, cuantas, simulacro, excluir) {
@@ -417,7 +419,7 @@ function inicio() {
         el("span", { class: "tag" }, "Como el examen real"),
         el("h2", {}, "Simulacro de examen"),
         el("div", { class: "facts" }, el("span", {}, `${R.preguntas} preguntas + ${R.reserva} de reserva`), el("span", {}, `${R.minutos} minutos`), el("span", {}, `Nota sobre ${R.maximo}`)),
-        el("p", { class: "muted small", style: "margin:0" }, "Temas repartidos como los reparte el tribunal, con prioridad para las preguntas que ha repetido.")),
+        el("p", { class: "muted small", style: "margin:0" }, "Temas repartidos como los reparte el tribunal, con prioridad para las preguntas que ha repetido y peso para los temas nuevos de 2026.")),
       el("button", { class: "card choice", onclick: configurar },
         el("span", { class: "tag" }, "A tu medida"),
         el("h2", {}, "Test de estudio"),
