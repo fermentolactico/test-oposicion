@@ -324,9 +324,12 @@ footer{margin-top:48px;font-size:.8rem;color:var(--muted);text-align:center}
 "use strict";
 let DATA = null;
 const view = document.getElementById("view");
-// Almacén común: Cloudflare Workers + D1 (servidor/). Guarda usuarias, PIN, resultados y el
+// Almacén común: servidor/ (antes Cloudflare Workers + D1; ahora local/servidor.mjs sobre SQLite). Guarda usuarias, PIN, resultados y el
 // tablero. Este navegador solo guarda una copia y el test a medias.
-const API_REAL = "https://test-oposicion.fermentolactico.workers.dev/";
+// Desde el 11/10/2026 el servidor vive en un VPS de Vultr (Madrid), en testibsalut.duckdns.org: Cloudflare queda bloqueado en
+// España durante los partidos (LaLiga). Desde esa dirección, la API va en la misma web; desde GitHub Pages, a esa dirección.
+const API_SERVIDOR = "https://testibsalut.duckdns.org/api/";
+const API_REAL = location.hostname === "testibsalut.duckdns.org" ? location.origin + "/api/" : API_SERVIDOR;
 const API = (["127.0.0.1", "localhost"].includes(location.hostname) && new URLSearchParams(location.search).get("api")) || API_REAL;
 let usuario = null, clave = null, USUARIAS = [], TABLERO = [];
 // Perfil de pruebas: no sale en el tablero ni entre las tarjetas; se entra con …/test-oposicion/?prueba

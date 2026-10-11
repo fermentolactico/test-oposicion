@@ -16,7 +16,7 @@ const PRUEBA = "Prueba";
 const PERMITIDAS = ["Ana", "Georgina", "Carmen"];   // Nadal, 08/10/2026: la web es solo para ellas
 const MAX_USUARIAS = 5, MAX_FALLOS = 5, BLOQUEO_MS = 15 * 60 * 1000;
 const MAX_TEST = 300000;   // bytes de un test guardado: un simulacro de 110 preguntas con su texto ocupa unos 40 KB
-const ORIGENES = ["https://fermentolactico.github.io", "http://127.0.0.1:8765", "http://localhost:8765"];
+const ORIGENES = ["https://fermentolactico.github.io", "https://testibsalut.duckdns.org", "http://127.0.0.1:8765", "http://localhost:8765"];
 
 export default {
   async fetch(request, env) {
