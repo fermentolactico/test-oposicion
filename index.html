@@ -8,7 +8,8 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%278%27 fill=%27%231f6f6b%27/%3E%3Cpath d=%27M9 17l4.5 4.5L23 11%27 stroke=%27white%27 stroke-width=%273.2%27 fill=%27none%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+<script>/* paleta elegida en este aparato, antes de pintar nada */try{document.documentElement.dataset.paleta=localStorage.getItem("oposicion.paleta")||"A"}catch(e){document.documentElement.dataset.paleta="A"}</script>
 <style>
 :root{
   --bg:#f6f3ee; --surface:#fffdf9; --surface-2:#f0ebe3; --ink:#1f2a2e; --muted:#5f6b6f; --line:#e2dbd0;
@@ -32,14 +33,14 @@
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,-apple-system,sans-serif}
-h1,h2,h3{font-family:Fraunces,Georgia,serif;font-weight:650;letter-spacing:-.01em;margin:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,'Segoe UI',sans-serif;background-image:radial-gradient(var(--washi) 1px,transparent 1px);background-size:6px 6px}
+h1,h2,h3{font-family:'Zen Maru Gothic',system-ui,sans-serif;font-weight:700;letter-spacing:-.01em;margin:0}
 button{font:inherit;cursor:pointer}
 .wrap{max-width:820px;margin:0 auto;padding:24px 16px 96px}
 header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:28px}
 .brand{display:flex;align-items:center;gap:10px;color:inherit;text-decoration:none;background:none;border:0;padding:0}
-.brand .logo{width:34px;height:34px;border-radius:10px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-family:Fraunces,serif;font-weight:650}
-.brand b{font-family:Fraunces,serif;font-size:1.15rem;font-weight:650}
+.brand .logo{width:34px;height:34px;border-radius:10px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-family:'Zen Maru Gothic',system-ui,sans-serif;font-weight:700}
+.brand b{font-family:'Zen Maru Gothic',system-ui,sans-serif;font-size:1.15rem;font-weight:650}
 .muted{color:var(--muted)}
 .small{font-size:.875rem}
 .hero h1{font-size:clamp(1.8rem,5vw,2.5rem);line-height:1.15;margin-bottom:8px}
@@ -112,7 +113,7 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
 @media (min-width:640px){.score{grid-template-columns:auto 1fr;align-items:center}}
 .ring{width:150px;height:150px;border-radius:50%;display:grid;place-items:center;margin:0 auto;background:conic-gradient(var(--c) calc(var(--p)*1%),var(--surface-2) 0)}
 .ring>div{width:118px;height:118px;border-radius:50%;background:var(--surface);display:grid;place-items:center;text-align:center}
-.ring b{font-family:Fraunces,serif;font-size:2rem;line-height:1}
+.ring b{font-family:'Zen Maru Gothic',system-ui,sans-serif;font-size:2rem;line-height:1}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .stat{background:var(--surface-2);border-radius:12px;padding:10px;text-align:center}
 .stat b{display:block;font-size:1.3rem}
@@ -126,7 +127,7 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
 .hidden{display:none!important}
 @media (max-width:520px){header.top:has(#quien .chip) .brand b{display:none}header.top{margin-bottom:18px}.bar{padding:10px 16px;margin-bottom:14px}.bar .inner{gap:8px}.q{padding:14px}.q .head{gap:10px}.hero h1{margin-bottom:4px}}
 .avatar{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--av);color:#fff;font-weight:600;font-size:.85rem;flex:none}
-.avatar.big{width:64px;height:64px;font-size:1.6rem;font-family:Fraunces,serif}
+.avatar.big{width:64px;height:64px;font-size:1.6rem;font-family:'Zen Maru Gothic',system-ui,sans-serif}
 .chip{display:inline-flex;align-items:center;gap:8px;font-weight:600}
 .perfiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;max-width:640px;margin:8px auto 0}
 .perfil{display:flex;flex-direction:column;align-items:center;gap:8px;padding:22px 12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);color:var(--ink);transition:transform .15s,border-color .15s}
@@ -158,8 +159,7 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
 .tablero tr.yo td:first-child{border-radius:10px 0 0 10px}
 .tablero tr.yo td:last-child{border-radius:0 10px 10px 0}
 .tablero td.top{color:var(--accent)}
-.medalla{margin-left:4px;font-size:.95rem}
-@media (max-width:520px){.tablero th{font-size:.62rem;letter-spacing:0}.tablero td{padding:9px 4px;font-size:.85rem}.tablero .chip{gap:6px}.medalla{margin-left:2px}}
+@media (max-width:520px){.tablero th{font-size:.62rem;letter-spacing:0}.tablero td{padding:9px 4px;font-size:.85rem}.tablero .chip{gap:6px}}
 .espera{max-width:420px;margin:12vh auto 0;text-align:center}
 .espera h3{font-size:1.25rem;margin-bottom:6px}
 .barra{height:8px;border-radius:8px;background:var(--surface-2);overflow:hidden;margin:18px 0 12px;position:relative}
@@ -188,7 +188,7 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
 .sala{display:grid;gap:8px}
 .fila-sala{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)}
 .cuenta-capa{background:color-mix(in srgb,var(--bg) 92%,transparent)}
-.cuenta{font-family:Fraunces,serif;font-size:7rem;font-weight:650;color:var(--accent);line-height:1}
+.cuenta{font-family:'Zen Maru Gothic',system-ui,sans-serif;font-size:7rem;font-weight:650;color:var(--accent);line-height:1}
 .avance{display:grid;gap:8px;margin-bottom:14px;padding:12px 14px}
 .fila-avance{display:grid;grid-template-columns:minmax(90px,auto) 1fr auto;gap:10px;align-items:center}
 .mini{height:8px;border-radius:8px;background:var(--surface-2);overflow:hidden}
@@ -241,6 +241,72 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
 .btn.danger{color:var(--bad)}
 .btn.danger.armed{background:var(--bad);border-color:var(--bad);color:#fff}
 footer{margin-top:48px;font-size:.8rem;color:var(--muted);text-align:center}
+/* Paletas de Sanzo Wada (A Dictionary of Color Combinations, 1933): A n.º 219 (Jasper Red, Chromium Green, Dusky Green),
+   B n.º 263 (Burnt Sienna, Pinkish Cinnamon, Turquoise Green, Slate), C n.º 325 (Eugenia Red, Naples Yellow, Yellow Ocher,
+   Deep Slate Green). Los acentos son colores del diccionario; fondos y textos se derivan de ellos para leerse bien. */
+:root[data-paleta="A"]{--bg:#f4efe4;--surface:#fbf8f1;--surface-2:#ece5d6;--ink:#1d2422;--muted:#5b625e;--line:#e0d8c6;--accent:#004f46;--accent-ink:#ffffff;--accent-soft:#dde8df;--ok:#2f6b3f;--ok-soft:#e2efe2;--bad:#b8431f;--bad-soft:#f8e2d8;--warn:#a86a12;--hanko:#d94a1f;--oro:#eb5324;--plata:#719470;--bronce:#a9c7a5;--washi:rgba(70,55,30,.05)}
+@media (prefers-color-scheme:dark){:root[data-paleta="A"]:not([data-theme="light"]){--bg:#0e1816;--surface:#16241f;--surface-2:#1d3029;--ink:#eef1ea;--muted:#a7b4ab;--line:#2a3d35;--accent:#a9c7a5;--accent-ink:#0e1816;--accent-soft:#1f3a2f;--ok:#9fd0a4;--ok-soft:#1d3a2a;--bad:#f08a6b;--bad-soft:#3a2219;--warn:#e3a94d;--hanko:#eb5324;--oro:#eb5324;--plata:#a9c7a5;--bronce:#719470;--washi:rgba(255,255,255,.03)}}
+:root[data-paleta="A"][data-theme="dark"]{--bg:#0e1816;--surface:#16241f;--surface-2:#1d3029;--ink:#eef1ea;--muted:#a7b4ab;--line:#2a3d35;--accent:#a9c7a5;--accent-ink:#0e1816;--accent-soft:#1f3a2f;--ok:#9fd0a4;--ok-soft:#1d3a2a;--bad:#f08a6b;--bad-soft:#3a2219;--warn:#e3a94d;--hanko:#eb5324;--oro:#eb5324;--plata:#a9c7a5;--bronce:#719470;--washi:rgba(255,255,255,.03)}
+:root[data-paleta="B"]{--bg:#f3efe8;--surface:#fbf9f5;--surface-2:#ebe5da;--ink:#1e292d;--muted:#56646a;--line:#ddd6c9;--accent:#34454c;--accent-ink:#ffffff;--accent-soft:#dcece5;--ok:#2c6b57;--ok-soft:#dcefe7;--bad:#ae5224;--bad-soft:#f6e3d6;--warn:#a86a12;--hanko:#ae5224;--oro:#ae5224;--plata:#34454c;--bronce:#eeb480;--washi:rgba(60,50,40,.05)}
+@media (prefers-color-scheme:dark){:root[data-paleta="B"]:not([data-theme="light"]){--bg:#172024;--surface:#212d31;--surface-2:#28383a;--ink:#f2efe9;--muted:#aab4b3;--line:#3a4c53;--accent:#b5decc;--accent-ink:#172024;--accent-soft:#25403a;--ok:#a8dcc0;--ok-soft:#203a32;--bad:#f0a07a;--bad-soft:#3d2c22;--warn:#eeb480;--hanko:#d66a3a;--oro:#eeb480;--plata:#b5decc;--bronce:#d08a5e;--washi:rgba(255,255,255,.03)}}
+:root[data-paleta="B"][data-theme="dark"]{--bg:#172024;--surface:#212d31;--surface-2:#28383a;--ink:#f2efe9;--muted:#aab4b3;--line:#3a4c53;--accent:#b5decc;--accent-ink:#172024;--accent-soft:#25403a;--ok:#a8dcc0;--ok-soft:#203a32;--bad:#f0a07a;--bad-soft:#3d2c22;--warn:#eeb480;--hanko:#d66a3a;--oro:#eeb480;--plata:#b5decc;--bronce:#d08a5e;--washi:rgba(255,255,255,.03)}
+:root[data-paleta="C"]{--bg:#f7f1df;--surface:#fffbef;--surface-2:#f1e7c9;--ink:#112f2c;--muted:#4e5e57;--line:#e3d7b2;--accent:#112f2c;--accent-ink:#fbe6a0;--accent-soft:#f4e6b3;--ok:#2e6b45;--ok-soft:#e3efd9;--bad:#b8323e;--bad-soft:#f7dfe0;--warn:#9a6c06;--hanko:#c93f4b;--oro:#b8891c;--plata:#5f7d78;--bronce:#da525d;--washi:rgba(80,60,10,.05)}
+@media (prefers-color-scheme:dark){:root[data-paleta="C"]:not([data-theme="light"]){--bg:#0b1d1b;--surface:#112f2c;--surface-2:#1c3a35;--ink:#fbf3dc;--muted:#c3c3a8;--line:#24504b;--accent:#e2b540;--accent-ink:#0b1d1b;--accent-soft:#2d3d22;--ok:#a9d68f;--ok-soft:#24391f;--bad:#ef8a92;--bad-soft:#3b1f24;--warn:#e2b540;--hanko:#da525d;--oro:#e2b540;--plata:#fbe6a0;--bronce:#da525d;--washi:rgba(255,255,255,.03)}}
+:root[data-paleta="C"][data-theme="dark"]{--bg:#0b1d1b;--surface:#112f2c;--surface-2:#1c3a35;--ink:#fbf3dc;--muted:#c3c3a8;--line:#24504b;--accent:#e2b540;--accent-ink:#0b1d1b;--accent-soft:#2d3d22;--ok:#a9d68f;--ok-soft:#24391f;--bad:#ef8a92;--bad-soft:#3b1f24;--warn:#e2b540;--hanko:#da525d;--oro:#e2b540;--plata:#fbe6a0;--bronce:#da525d;--washi:rgba(255,255,255,.03)}
+:root{--washi:transparent;--hanko:#c93f4b;--oro:#c9952b;--plata:#8a9a9c;--bronce:#b5642c}
+/* movimiento: suave y corto; todo se apaga con «reducir movimiento» */
+@property --p{syntax:'<number>';inherits:false;initial-value:0}
+@keyframes entra{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes llena{from{--p:0}}
+@keyframes estampa{0%{transform:scale(1.6) rotate(-4deg);opacity:0}60%{transform:scale(.94) rotate(-13deg);opacity:1}100%{transform:scale(1) rotate(-12deg);opacity:1}}
+@keyframes pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.08);opacity:1}100%{transform:scale(1)}}
+@keyframes cuenta{0%{transform:scale(.5);opacity:0}25%{transform:scale(1.15);opacity:1}70%{transform:scale(1);opacity:1}100%{transform:scale(1.5);opacity:0}}
+@keyframes sube{from{transform:scaleY(.05)}to{transform:scaleY(1)}}
+@keyframes cae{0%{transform:translate3d(0,-10vh,0) rotate(0);opacity:1}100%{transform:translate3d(var(--x),105vh,0) rotate(var(--g));opacity:.9}}
+.vista-entra{animation:entra .2s ease-out both}
+.opt{transition:background-color .15s ease-out,border-color .15s ease-out,transform .12s ease-out}
+.opt:not(:disabled):active,.btn:not(:disabled):active,.choice:active,.seg:active,.tema:active{transform:scale(.98)}
+.btn,.seg,.tema{transition:background-color .15s ease-out,border-color .15s ease-out,transform .12s ease-out}
+.progress i{transition:width .4s cubic-bezier(.2,.8,.2,1)}
+.ring{animation:llena 1s cubic-bezier(.2,.8,.2,1) .1s both}
+.stats .stat{animation:entra .25s ease-out both}
+.stats .stat:nth-child(1){animation-delay:.35s}.stats .stat:nth-child(2){animation-delay:.44s}.stats .stat:nth-child(3){animation-delay:.53s}
+.score{position:relative}
+.hanko{position:absolute;right:14px;top:-16px;width:76px;height:76px;border-radius:50%;border:3px solid var(--hanko);color:var(--hanko);background:var(--surface);display:grid;place-items:center;text-align:center;transform:rotate(-12deg);font-family:'Zen Maru Gothic',system-ui,sans-serif;font-weight:700;line-height:1.05;font-size:.74rem;letter-spacing:.06em;box-shadow:inset 0 0 0 3px var(--surface),inset 0 0 0 4px var(--hanko);animation:estampa .32s cubic-bezier(.2,.8,.2,1) 1.15s both;pointer-events:none}
+.hanko .kanji{display:block;font-size:1.25rem;letter-spacing:0}
+.q.aparece{animation:entra .16s ease-out both}
+.pop{animation:pop .24s cubic-bezier(.2,.8,.2,1) both}
+.cuenta.late{animation:cuenta .9s ease-out both}
+.confeti{position:fixed;inset:0;pointer-events:none;z-index:30;overflow:hidden}
+.confeti i{position:absolute;top:0;width:8px;height:12px;border-radius:2px;background:var(--c);animation:cae var(--d) cubic-bezier(.3,.6,.4,1) var(--r) both}
+/* panel competitivo */
+.podio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:end;margin:14px 0 10px}
+.podio>div{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
+.podio .peana{width:100%;border-radius:12px 12px 4px 4px;display:grid;place-items:center;font-family:'Zen Maru Gothic',system-ui,sans-serif;font-weight:700;background:var(--surface-2);transform-origin:bottom;animation:sube .7s cubic-bezier(.2,.8,.2,1) both}
+.podio .p1 .peana{height:78px;background:var(--oro);color:var(--bg);font-size:1.5rem}
+.podio .p2 .peana{height:54px;font-size:1.25rem;animation-delay:.12s}
+.podio .p3 .peana{height:38px;font-size:1.1rem;animation-delay:.24s}
+.podio .p1 .avatar{box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--oro)}
+.podio .nombre{font-size:.82rem;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.podio .cifra{font-size:.72rem;color:var(--muted)}
+.filas-tablero{display:grid;gap:6px;margin-top:6px}
+.fila-t{display:grid;grid-template-columns:minmax(84px,auto) minmax(56px,1fr) auto auto;gap:10px;align-items:center;font-size:.86rem;padding:6px 8px;border-radius:12px}
+.fila-t.yo{background:var(--accent-soft)}
+.fila-t svg{width:100%;height:24px;display:block}
+.fila-t .racha{font-size:.76rem;color:var(--muted);white-space:nowrap}
+.fila-t .media{font-weight:700;font-variant-numeric:tabular-nums;text-align:right;min-width:2.6em}
+.insignias{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.insignia{font-size:.78rem;padding:4px 10px;border-radius:999px;background:var(--surface-2);color:var(--ink);display:inline-flex;gap:6px;align-items:center}
+.insignia svg{width:14px;height:14px;color:var(--oro)}
+/* elegir paleta */
+.paletas{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:28px}
+.paleta-btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 12px 6px 8px;font-size:.84rem;min-height:40px}
+.paleta-btn[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.paleta-btn .mues{display:inline-flex}
+.paleta-btn .mues i{width:14px;height:14px;border-radius:50%;margin-left:-4px;border:2px solid var(--surface)}
+.paleta-btn .mues i:first-child{margin-left:0}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-delay:0s!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.confeti{display:none}}
+
 </style>
 </head>
 <body>
@@ -447,7 +513,46 @@ function puntuar(ex) {
 }
 
 // ---------- vistas ----------
-function pintar(...hijos) { view.replaceChildren(...hijos.flat(Infinity).filter(h => h !== null && h !== undefined && h !== false)); window.scrollTo(0, 0); }
+function pintar(...hijos) {
+  view.replaceChildren(...hijos.flat(Infinity).filter(h => h !== null && h !== undefined && h !== false)); window.scrollTo(0, 0);
+  view.classList.remove("vista-entra"); void view.offsetWidth; view.classList.add("vista-entra");   // fundido + 8 px al cambiar de pantalla
+}
+const sinMovimiento = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// ---------- paletas (Sanzo Wada); la elegida se recuerda en este aparato ----------
+const PALETAS = [
+  { id: "A", nombre: "Pino y jaspe", mues: ["#004f46", "#719470", "#eb5324"] },
+  { id: "B", nombre: "Pizarra y canela", mues: ["#34454c", "#b5decc", "#eeb480"] },
+  { id: "C", nombre: "Pizarra honda y ocre", mues: ["#112f2c", "#e2b540", "#da525d"] },
+];
+function elegirPaleta() {
+  const actual = () => document.documentElement.dataset.paleta || "A";
+  const botones = PALETAS.map(pa => el("button", { class: "paleta-btn", "aria-pressed": String(pa.id === actual()), title: "Paleta " + pa.nombre,
+    onclick: () => {
+      document.documentElement.dataset.paleta = pa.id;
+      guardar("oposicion.paleta", pa.id);
+      botones.forEach((b, i) => b.setAttribute("aria-pressed", String(PALETAS[i].id === pa.id)));
+    } }, el("span", { class: "mues", "aria-hidden": "true" }, pa.mues.map(c => el("i", { style: `background:${c}` }))), pa.nombre));
+  return el("div", { class: "paletas", role: "group", "aria-label": "Colores de la web" }, el("span", { class: "muted small" }, "Colores:"), botones);
+}
+
+// Confeti discreto (solo al aprobar un simulacro): 28 papelitos de la paleta, 1,5 s, y se quita solo
+function confeti() {
+  if (sinMovimiento()) return;
+  const est = getComputedStyle(document.documentElement), cs = ["--oro", "--plata", "--bronce", "--hanko", "--accent"].map(v => est.getPropertyValue(v).trim());
+  const capa = el("div", { class: "confeti", "aria-hidden": "true" }, Array.from({ length: 28 }, (_, i) =>
+    el("i", { style: `left:${Math.round(Math.random() * 100)}%;--c:${cs[i % cs.length]};--x:${Math.round(Math.random() * 160 - 80)}px;--g:${Math.round(Math.random() * 720 - 360)}deg;--d:${(1.2 + Math.random() * .5).toFixed(2)}s;--r:${(Math.random() * .35).toFixed(2)}s` })));
+  document.body.append(capa);
+  setTimeout(() => capa.remove(), 2400);
+}
+// Cuenta hasta la nota mientras se llena el anillo
+function contar(nodo, hasta, ms = 1000) {
+  if (sinMovimiento()) { nodo.textContent = coma(hasta); return; }
+  const t0 = performance.now() + 100;
+  const paso = t => { const k = Math.min(1, Math.max(0, (t - t0) / ms)), e = 1 - Math.pow(1 - k, 3);
+    nodo.textContent = coma(Math.round(hasta * e * 100) / 100); if (k < 1) requestAnimationFrame(paso); };
+  nodo.textContent = coma(0); requestAnimationFrame(paso);
+}
 
 function inicio() {
   pararReloj();
@@ -492,7 +597,8 @@ function inicio() {
     leer(K.pendientes, []).length ? el("p", { class: "muted small" }, "Hay resultados pendientes de enviar: se mandarán en cuanto haya conexión.") : null,
     hist.length || leer(K.usadas, []).length ? el("div", { class: "row", style: "margin-top:8px" }, botonBorrar()) : null,
     vistaComo(),
-    vistaOrigenes()
+    vistaOrigenes(),
+    elegirPaleta()
   );
 }
 
@@ -670,9 +776,14 @@ function resultado(ex) {
   const lista = el("div", {}, tarjetas);
   const filtro = modo => () => {
     filtros.forEach(b => b.setAttribute("aria-pressed", b.dataset.m === modo));
-    lista.querySelectorAll(".q").forEach(q => q.classList.toggle("hidden", modo !== "todas" && q.dataset.estado !== modo));
+    lista.querySelectorAll(".q").forEach(q => {
+      const oculta = modo !== "todas" && q.dataset.estado !== modo;
+      q.classList.toggle("hidden", oculta);
+      q.classList.remove("aparece"); if (!oculta) { void q.offsetWidth; q.classList.add("aparece"); }
+    });
     lista.querySelectorAll(".reserva-sep").forEach(s => s.classList.toggle("hidden", modo !== "todas"));
   };
+  const numero = el("b", {}, coma(r.nota));
   const filtros = [["todas", "Todas"], ["bad", `Falladas (${r.e})`], ["blank", `En blanco (${r.b})`], ["ok", `Acertadas (${r.a})`]]
     .map(([m, t]) => el("button", { "data-m": m, "aria-pressed": m === "todas" ? "true" : "false" }, t));
   filtros.forEach(b => b.addEventListener("click", filtro(b.dataset.m)));
@@ -680,8 +791,9 @@ function resultado(ex) {
     el("section", { class: "hero" }, el("h1", {}, ex.tipo === "simulacro" ? "Resultado del simulacro" : "Resultado del test"),
       el("p", {}, `${ex.usuario ? ex.usuario + " · " : ""}${temasTxt(ex.temas)} · ${fecha(r.fin)}`)),
     el("div", { class: "card score" },
-      el("div", { class: "ring", style: `--p:${Math.round(100 * r.nota / ex.maximo)};--c:${color}` },
-        el("div", {}, el("div", {}, el("b", {}, coma(r.nota)), el("div", { class: "muted small" }, "sobre " + ex.maximo)))),
+      el("div", { class: "ring", role: "img", "aria-label": `Nota ${coma(r.nota)} sobre ${ex.maximo}`, style: `--p:${Math.round(100 * r.nota / ex.maximo)};--c:${color}` },
+        el("div", {}, el("div", {}, numero, el("div", { class: "muted small" }, "sobre " + ex.maximo)))),
+      r.aprobado ? el("div", { class: "hanko", role: "img", "aria-label": "Sello de aprobado" }, el("span", {}, el("span", { class: "kanji", "aria-hidden": "true" }, "合格"), "APTO")) : null,
       el("div", {},
         el("p", { style: "margin:0 0 12px" }, el("span", { class: "pill " + (r.aprobado ? "ok" : "bad") }, r.aprobado ? "Superado" : "No superado"),
           el("span", { class: "muted small" }, `  se supera con ${ex.minimo}`)),
@@ -704,6 +816,8 @@ function resultado(ex) {
     el("div", { class: "filters" }, filtros),
     lista
   );
+  contar(numero, r.nota);
+  if (r.aprobado && ex.tipo === "simulacro" && !ex.archivo && Date.now() - r.fin < 5000) setTimeout(confeti, 1300);
 }
 
 // ---------- mis tests: el registro de todo lo hecho, con las respuestas ----------
@@ -911,7 +1025,8 @@ function configurarReto() {
       const j = await api({ accion: "crearReto", nombre: usuario, clave, tipo, invitadas: [...elegidas], minutos: ex.minutos,
         config: { temas: ex.temas, n: ex.n, reserva: ex.reserva, maximo: ex.maximo, minimo: ex.minimo },
         preguntas: ex.preguntas.map(i => DATA.preguntas[i].h) });
-      sala(j.reto);
+      enviar.replaceChildren(el("span", { class: "pop", style: "display:inline-flex;gap:6px;align-items:center" }, icono('<path d="M5 12.5l4.5 4.5L19 7.5"/>'), "Enviado"));
+      setTimeout(() => sala(j.reto), sinMovimiento() ? 0 : 450);
     } catch (e) { enviar.disabled = false; enviar.textContent = "Enviar el reto"; aviso.textContent = e.message; }
   });
   pintar(
@@ -939,9 +1054,11 @@ function sala(reto) {
   const caja = el("div", { class: "card" }, lista, nota, botones);
   const soyCreadora = reto.creadora === usuario;
   const ESTADOS = { aceptada: ["Dentro", "ok"], invitada: ["Esperando respuesta", ""], rechazada: ["No viene", "bad"], sin_respuesta: ["No contestó", "bad"] };
+  const dentroAntes = new Set();
   const pintarSala = r => {
-    lista.replaceChildren(...r.participantes.map(p => el("div", { class: "fila-sala" }, el("span", { class: "chip" }, avatar(p.nombre), p.nombre + (p.nombre === r.creadora ? " (reta)" : "")),
+    lista.replaceChildren(...r.participantes.map(p => el("div", { class: "fila-sala" + (p.estado === "aceptada" && !dentroAntes.has(p.nombre) ? " pop" : "") }, el("span", { class: "chip" }, avatar(p.nombre), p.nombre + (p.nombre === r.creadora ? " (reta)" : "")),
       el("span", { class: "pill " + ESTADOS[p.estado][1] }, ESTADOS[p.estado][0]))));
+    r.participantes.forEach(p => { if (p.estado === "aceptada") dentroAntes.add(p.nombre); });
     const dentro = r.participantes.filter(p => p.estado === "aceptada").length;
     if (r.estado === "cancelado" || r.estado === "caducado") {
       nota.textContent = r.estado === "cancelado" ? "Este reto se ha cancelado." : "Este reto ha caducado sin empezar.";
@@ -979,10 +1096,16 @@ function sala(reto) {
 function cuentaAtras(inicioLocal, despues) {
   const num = el("div", { class: "cuenta" }), capa = el("div", { class: "modal cuenta-capa" }, el("div", { class: "center" }, el("p", { class: "muted" }, "El reto empieza en"), num));
   document.body.append(capa);
+  let ultimo = null;
   const paso = () => {
     const quedan = Math.ceil((inicioLocal - Date.now()) / 1000);
-    if (quedan <= 0) { capa.remove(); return despues(); }
-    num.textContent = quedan; setTimeout(paso, 200);
+    if (quedan <= 0) {
+      if (ultimo === "ya" || sinMovimiento()) { capa.remove(); return despues(); }
+      ultimo = "ya"; num.textContent = "¡Ya!"; num.classList.remove("late"); void num.offsetWidth; num.classList.add("late");
+      return setTimeout(paso, 450);
+    }
+    if (quedan !== ultimo) { ultimo = quedan; num.textContent = quedan; num.classList.remove("late"); void num.offsetWidth; num.classList.add("late"); }
+    setTimeout(paso, 200);
   };
   paso();
 }
@@ -1260,26 +1383,54 @@ async function enviarPendientes() {
 const tableros = new Set();
 function refrescarTablero() { for (const t of [...tableros]) { if (!t.isConnected) { tableros.delete(t); continue; } t.replaceWith(vistaTablero()); } }
 function vistaTablero() {
-  const filas = TABLERO.filter(t => t.total > 0 || t.nombre === usuario);
+  const filas = TABLERO.filter(t => t.total > 0 || t.nombre === usuario)
+    .sort((a, b) => (b.semana - a.semana) || ((b.media5 ?? -1) - (a.media5 ?? -1)) || (b.total - a.total));
   const caja = el("section", { class: "card tablero" });
   tableros.add(caja);
-  const lider = campo => { const v = filas.map(f => f[campo]).filter(x => x !== null && x > 0); return v.length ? Math.max(...v) : null; };
-  const L = { mejor: lider("mejor"), media5: lider("media5"), semana: lider("semana") };
-  const celda = (f, campo, txt) => el("td", { class: f[campo] !== null && f[campo] === L[campo] ? "top" : "" },
-    f[campo] === null ? el("span", { class: "muted" }, "—") : txt, f[campo] !== null && f[campo] === L[campo] ? el("span", { class: "medalla", title: "Líder" }, "🥇") : null);
+  if (!filas.length) {
+    caja.append(el("h3", {}, "Esta semana"), el("p", { class: "muted small" }, "Todavía no hay resultados. ¡El primer test abre la clasificación!"));
+    return caja;
+  }
+  // podio de la semana: más tests y simulacros desde el lunes; desempata la media de los 5 últimos simulacros
+  const podio = [filas[1], filas[0], filas[2]].map((f, k) => f ? el("div", { class: "p" + [2, 1, 3][k] },
+    avatar(f.nombre, k === 1), el("span", { class: "nombre" }, f.nombre),
+    el("span", { class: "cifra" }, `${f.semana} ${f.semana === 1 ? "test" : "tests"}`),
+    el("div", { class: "peana", "aria-hidden": "true" }, String([2, 1, 3][k]))) : el("div", {}));
+  // las 10 últimas notas de cada una, como fracción de su máximo
+  const linea = u => {
+    if (!u || u.length < 2) return el("span", { class: "muted small" }, u && u.length ? "1 test" : "—");
+    const pts = u.map((v, i) => `${Math.round(i * 100 / (u.length - 1))},${(22 - v * 20).toFixed(1)}`).join(" ");
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 100 24"); svg.setAttribute("preserveAspectRatio", "none"); svg.setAttribute("role", "img");
+    svg.setAttribute("aria-label", "Evolución de las últimas notas");
+    svg.innerHTML = `<polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`;
+    return svg;
+  };
+  const filasT = filas.map(f => el("div", { class: "fila-t" + (f.nombre === usuario ? " yo" : "") },
+    el("span", { class: "chip" }, avatar(f.nombre), f.nombre),
+    linea(f.ultimas),
+    el("span", { class: "racha" }, f.racha ? `Racha ${f.racha} d` : "—"),
+    el("span", { class: "media", title: "Media de sus 5 últimos simulacros" }, f.media5 === null ? "—" : coma(f.media5))));
+  // insignias: quién lidera cada cosa (los empates las comparten)
+  const lider = (campo, minimo = 0) => {
+    const v = filas.map(f => f[campo]).filter(x => x !== null && x !== undefined && x > minimo);
+    if (!v.length) return null;
+    const top = Math.max(...v);
+    return { top, quien: filas.filter(f => f[campo] === top).map(f => f.nombre).join(" y ") };
+  };
+  const estrella = () => icono('<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z"/>');
+  const ins = [
+    ["Mejor nota", lider("mejor"), x => coma(x)],
+    ["Más simulacros esta semana", lider("simsSemana"), x => String(x)],
+    ["Mayor subida", lider("subida"), x => "+" + coma(x)],
+    ["Más retos ganados", lider("retos"), x => String(x)],
+  ].filter(([, l]) => l).map(([t, l, f]) => el("span", { class: "insignia" }, estrella(), `${t} · ${l.quien} ${f(l.top)}`));
   caja.append(...[
-    el("h3", {}, "Clasificación"),
-    filas.length ? el("table", {},
-      el("thead", {}, el("tr", {}, el("th", {}, ""), el("th", {}, "Mejor"), el("th", {}, "Media"), el("th", {}, "Semana"))),
-      el("tbody", {}, filas
-        .sort((a, b) => (b.media5 ?? -1) - (a.media5 ?? -1) || (b.semana - a.semana))
-        .map(f => el("tr", { class: f.nombre === usuario ? "yo" : "" },
-          el("td", {}, el("span", { class: "chip" }, avatar(f.nombre), f.nombre)),
-          celda(f, "mejor", coma(f.mejor ?? 0)),
-          celda(f, "media5", coma(f.media5 ?? 0)),
-          celda(f, "semana", String(f.semana)))))) :
-      el("p", { class: "muted small" }, "Todavía no hay resultados. ¡El primer simulacro abre la clasificación!"),
-    filas.length ? el("p", { class: "muted small", style: "margin:10px 0 0" }, "Mejor: su mejor simulacro · Media: sus 5 últimos simulacros (sobre 30) · Semana: tests y simulacros hechos desde el lunes.") : null
+    el("h3", {}, "Esta semana"),
+    el("div", { class: "podio" }, podio),
+    el("div", { class: "filas-tablero" }, filasT),
+    ins.length ? el("div", { class: "insignias" }, ins) : null,
+    el("p", { class: "muted small", style: "margin:10px 0 0" }, "Podio: tests y simulacros hechos desde el lunes. Línea: sus 10 últimas notas. Racha: días seguidos practicando. Número: media de sus 5 últimos simulacros (sobre 30).")
   ].filter(Boolean));   // append() escribiría «null» como texto
   return caja;
 }
