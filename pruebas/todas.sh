@@ -10,4 +10,5 @@ trap 'pkill -f "http.server 8765"' EXIT
 echo "== estudio y tiempo";                node estudio-y-tiempo.js
 echo "== simulacro y test a medias";       node simulacro-y-test-a-medias.js
 if [ -n "$ADMIN" ]; then echo "== reto en grupo"; node reto-en-grupo.js "$ADMIN"; fi
+# registro-de-tests.js necesita el servidor en local: cd servidor && npx wrangler dev --local --port 8787
 echo "== velocidad";                       node velocidad.js http://127.0.0.1:8765/

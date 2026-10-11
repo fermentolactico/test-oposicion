@@ -17,6 +17,15 @@ CREATE TABLE IF NOT EXISTS resultados (
   UNIQUE (nombre, fin)                  -- un reintento no duplica nada
 );
 CREATE INDEX IF NOT EXISTS resultados_nombre ON resultados (nombre, fin);
+-- Cada test hecho, entero y en formato sencillo (JSON): preguntas con su texto, lo que marcó y el
+-- resultado. Con él la web enseña el test y genera sus PDF en el momento; no se guarda ningún PDF.
+-- Aparte de «resultados» para que el tablero no lea textos. Un simulacro ocupa unos 40 KB.
+CREATE TABLE IF NOT EXISTS tests (
+  nombre TEXT NOT NULL,
+  fin    INTEGER NOT NULL,              -- el mismo «fin» que su fila de resultados
+  datos  TEXT NOT NULL,
+  PRIMARY KEY (nombre, fin)
+);
 CREATE TABLE IF NOT EXISTS usadas (     -- preguntas ya salidas en los simulacros de cada una
   nombre TEXT NOT NULL,
   h      TEXT NOT NULL,

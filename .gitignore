@@ -1,3 +1,4 @@
 node_modules/
 .wrangler/
 pruebas/descargas/
+.dev.vars

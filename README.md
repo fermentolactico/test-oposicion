@@ -2,7 +2,14 @@
 
 Web de tests para la oposición A2 (grupo de gestión de la función administrativa, IB-Salut).
 Simulacros como el examen real y tests de estudio por temas, con descarga del test y de
-las respuestas en PDF. Sin registro: los resultados se guardan en el navegador de cada uno.
+las respuestas en PDF. Cada usuaria entra con su PIN; sus notas van al servidor (Cloudflare
+Workers + D1, carpeta `servidor/`).
+
+**Mis tests.** Al corregir, el test entero se guarda en el servidor en formato sencillo (tabla
+`tests`: preguntas con su texto, lo marcado y el resultado; unos 70 KB un simulacro). «Mis tests»
+lo enseña tal como se hizo, aunque luego cambie el banco, y genera sus PDF en el momento, en el
+navegador: no se guarda ningún PDF. Los PDF van comprimidos (jsPDF `compress`): ~135 KB un
+simulacro. Los tests anteriores al 11/10/2026 solo tienen la nota.
 
 Las preguntas salen del banco del repo de la oposición (`tests/`), con las mismas reglas que
 `examen.py` del tutor (selección y puntuación del BOIB 72/2026).

@@ -6,6 +6,7 @@
  *   POST {accion:"crearPin", nombre, clave}  → primer PIN
  *   POST {accion:"entrar"|"guardar"|"borrar", nombre, clave, …}
  *   POST {accion:"admin", token, op, …}      → página de administración (secreto ADMIN)
+ *   POST {accion:"misTests"|"verTest", nombre, clave[, fin]} → todos sus tests / uno entero (con preguntas y respuestas)
  *   Retos en grupo (todas con nombre y clave): crearReto, misRetos, responderReto, empezarReto,
  *   cancelarReto, pulso (manda su avance y recibe el de las demás) y terminarReto.
  * La web manda el PIN ya resumido (SHA-256); aquí se resume otra vez con la sal secreta SAL.
@@ -14,6 +15,7 @@
 const PRUEBA = "Prueba";
 const PERMITIDAS = ["Ana", "Georgina", "Carmen"];   // Nadal, 08/10/2026: la web es solo para ellas
 const MAX_USUARIAS = 5, MAX_FALLOS = 5, BLOQUEO_MS = 15 * 60 * 1000;
+const MAX_TEST = 300000;   // bytes de un test guardado: un simulacro de 110 preguntas con su texto ocupa unos 40 KB
 const ORIGENES = ["https://fermentolactico.github.io", "http://127.0.0.1:8765", "http://localhost:8765"];
 
 export default {
@@ -48,6 +50,8 @@ async function accion(env, d) {
     case "entrar": await comprobar(env, d.nombre, d.clave); return { ok: true, historial: await historial(env, d.nombre), usadas: await usadas(env, d.nombre) };
     case "guardar": await comprobar(env, d.nombre, d.clave); return guardar(env, d.nombre, d.resultado, d.usadas);
     case "borrar": await comprobar(env, d.nombre, d.clave); return borrarTodo(env, d.nombre);
+    case "misTests": await comprobar(env, d.nombre, d.clave); return misTests(env, d.nombre);
+    case "verTest": await comprobar(env, d.nombre, d.clave); return verTest(env, d.nombre, d.fin);
     case "admin": return admin(env, d);
     case "crearReto": await comprobar(env, d.nombre, d.clave); return crearReto(env, d);
     case "misRetos": await comprobar(env, d.nombre, d.clave); return misRetos(env, d.nombre);
@@ -125,6 +129,11 @@ async function guardar(env, nombre, r, ids) {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
     .bind(nombre, r.tipo === "simulacro" ? "simulacro" : "test", String(r.desc || "").slice(0, 120), r.nota, Number(r.maximo) || 0,
       r.aprobado ? 1 : 0, r.a ?? null, r.e ?? null, r.b ?? null, r.n ?? null, fin)];
+  if (r.detalle) {
+    const datos = JSON.stringify(r.detalle);
+    if (datos.length > MAX_TEST) throw new Error("El test es demasiado grande para guardarlo.");
+    lote.push(env.DB.prepare("INSERT OR IGNORE INTO tests (nombre, fin, datos) VALUES (?, ?, ?)").bind(nombre, fin, datos));
+  }
   for (const h of (Array.isArray(ids) ? ids : []).slice(0, 5000)) lote.push(env.DB.prepare("INSERT OR IGNORE INTO usadas (nombre, h) VALUES (?, ?)").bind(nombre, String(h).slice(0, 16)));
   for (let i = 0; i < lote.length; i += 200) await env.DB.batch(lote.slice(i, i + 200));
   return { ok: true, tablero: await tablero(env) };
@@ -132,6 +141,17 @@ async function guardar(env, nombre, r, ids) {
 async function historial(env, nombre) {
   const { results } = await env.DB.prepare("SELECT tipo, descr, nota, maximo, aprobado, fin FROM resultados WHERE nombre = ? ORDER BY fin DESC LIMIT 50").bind(nombre).all();
   return results.map(x => ({ tipo: x.tipo, desc: x.descr, nota: x.nota, maximo: x.maximo, aprobado: !!x.aprobado, fin: x.fin }));
+}
+async function misTests(env, nombre) {
+  const { results } = await env.DB.prepare(`SELECT r.tipo, r.descr, r.nota, r.maximo, r.aprobado, r.a, r.e, r.b, r.n, r.fin, t.fin IS NOT NULL AS entero
+      FROM resultados r LEFT JOIN tests t ON t.nombre = r.nombre AND t.fin = r.fin WHERE r.nombre = ? ORDER BY r.fin DESC`).bind(nombre).all();
+  return { ok: true, tests: results.map(x => ({ tipo: x.tipo, desc: x.descr, nota: x.nota, maximo: x.maximo, aprobado: !!x.aprobado,
+    a: x.a, e: x.e, b: x.b, n: x.n, fin: x.fin, entero: !!x.entero })) };
+}
+async function verTest(env, nombre, fin) {
+  const t = await env.DB.prepare("SELECT datos FROM tests WHERE nombre = ? AND fin = ?").bind(nombre, Number(fin)).first();
+  if (!t) throw new Error("Ese test no se guardó entero.");
+  return { ok: true, test: JSON.parse(t.datos) };
 }
 async function usadas(env, nombre) {
   const { results } = await env.DB.prepare("SELECT h FROM usadas WHERE nombre = ?").bind(nombre).all();
@@ -141,6 +161,7 @@ async function borrarTodo(env, nombre) {
   await env.DB.batch([
     env.DB.prepare("DELETE FROM resultados WHERE nombre = ?").bind(nombre),
     env.DB.prepare("DELETE FROM usadas WHERE nombre = ?").bind(nombre),
+    env.DB.prepare("DELETE FROM tests WHERE nombre = ?").bind(nombre),
   ]);
   return { ok: true, tablero: await tablero(env) };
 }
@@ -183,7 +204,7 @@ async function admin(env, d) {
       env.DB.prepare("DELETE FROM fallos WHERE nombre = ?").bind(d.nombre),
     ]);
   } else if (d.op === "borrarUsuaria") {
-    await env.DB.batch(["usuarias", "resultados", "usadas", "fallos", "reto_part"].map(t => env.DB.prepare(`DELETE FROM ${t} WHERE nombre = ?`).bind(d.nombre)));
+    await env.DB.batch(["usuarias", "resultados", "usadas", "fallos", "reto_part", "tests"].map(t => env.DB.prepare(`DELETE FROM ${t} WHERE nombre = ?`).bind(d.nombre)));
   } else if (d.op !== "listar") throw new Error("Operación desconocida.");
   const us = (await env.DB.prepare("SELECT nombre, pin != '' AS tienePin, alta FROM usuarias ORDER BY alta, nombre").all()).results;
   const res = (await env.DB.prepare("SELECT nombre, tipo, descr, nota, maximo, aprobado, a, e, b, n, fin FROM resultados ORDER BY fin DESC").all()).results;
