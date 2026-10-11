@@ -73,7 +73,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 </div>
 <script>
 "use strict";
-const API = "https://test-oposicion.fermentolactico.workers.dev/";
+const API = location.hostname === "testibsalut.duckdns.org" ? location.origin + "/api/" : "https://testibsalut.duckdns.org/api/";   // servidor Vultr en Madrid (11/10/2026)
 let token = null, datos = null;
 const $ = id => document.getElementById(id);
 const poner = (nodo, ...hijos) => nodo.replaceChildren(...hijos.flat(Infinity).filter(h => h !== null && h !== undefined && h !== false));   // replaceChildren no aplana listas

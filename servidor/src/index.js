@@ -16,7 +16,7 @@ const PRUEBA = "Prueba";
 const PERMITIDAS = ["Ana", "Georgina", "Carmen"];   // Nadal, 08/10/2026: la web es solo para ellas
 const MAX_USUARIAS = 5, MAX_FALLOS = 5, BLOQUEO_MS = 15 * 60 * 1000;
 const MAX_TEST = 300000;   // bytes de un test guardado: un simulacro de 110 preguntas con su texto ocupa unos 40 KB
-const ORIGENES = ["https://fermentolactico.github.io", "http://127.0.0.1:8765", "http://localhost:8765"];
+const ORIGENES = ["https://fermentolactico.github.io", "https://testibsalut.duckdns.org", "http://127.0.0.1:8765", "http://localhost:8765"];
 
 export default {
   async fetch(request, env) {
@@ -175,7 +175,7 @@ async function estado(env) {
 async function tablero(env, nombres) {
   if (!nombres) nombres = (await env.DB.prepare("SELECT nombre FROM usuarias ORDER BY alta, nombre").all()).results.map(x => x.nombre);
   nombres = nombres.filter(n => n !== PRUEBA);
-  const { results } = await env.DB.prepare("SELECT nombre, tipo, nota, maximo, fin FROM resultados WHERE nombre != ? ORDER BY fin DESC").bind(PRUEBA).all();
+  const { results } = await env.DB.prepare("SELECT nombre, tipo, nota, maximo, aprobado, fin FROM resultados WHERE nombre != ? ORDER BY fin DESC").bind(PRUEBA).all();
   const ganados = await retosGanados(env);
   const ahora = Date.now(), lunes = lunesMadrid(ahora), hoy = diaMadrid(ahora), ayer = diaMadrid(ahora - 86400000);
   const media = xs => xs.length ? Math.round(xs.reduce((a, b) => a + b, 0) / xs.length * 100) / 100 : null;
@@ -198,8 +198,8 @@ async function tablero(env, nombres) {
       simsSemana: mias.filter(x => x.tipo === "simulacro" && diaMadrid(x.fin) >= lunes).length,
       total: mias.length,
       racha,
-      // las 10 últimas notas, de la más antigua a la más reciente, como fracción de su máximo
-      ultimas: mias.slice(0, 10).reverse().map(x => x.maximo ? Math.round(x.nota / x.maximo * 1000) / 1000 : 0),
+      // las 5 últimas notas, de la más reciente a la más antigua
+      notas: mias.slice(0, 5).map(x => ({ nota: x.nota, aprobado: !!x.aprobado })),
       // media de los 5 últimos simulacros menos la de los 5 anteriores (hacen falta al menos 2 en cada tanda)
       subida: sims.length >= 7 && m5 !== null && antes !== null ? Math.round((m5 - antes) * 100) / 100 : null,
       retos: ganados[n] || 0,
