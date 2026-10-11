@@ -175,21 +175,49 @@ async function estado(env) {
 async function tablero(env, nombres) {
   if (!nombres) nombres = (await env.DB.prepare("SELECT nombre FROM usuarias ORDER BY alta, nombre").all()).results.map(x => x.nombre);
   nombres = nombres.filter(n => n !== PRUEBA);
-  const { results } = await env.DB.prepare("SELECT nombre, tipo, nota, fin FROM resultados WHERE nombre != ? ORDER BY fin DESC").bind(PRUEBA).all();
-  const lunes = lunesMadrid(Date.now());
+  const { results } = await env.DB.prepare("SELECT nombre, tipo, nota, maximo, fin FROM resultados WHERE nombre != ? ORDER BY fin DESC").bind(PRUEBA).all();
+  const ganados = await retosGanados(env);
+  const ahora = Date.now(), lunes = lunesMadrid(ahora), hoy = diaMadrid(ahora), ayer = diaMadrid(ahora - 86400000);
+  const media = xs => xs.length ? Math.round(xs.reduce((a, b) => a + b, 0) / xs.length * 100) / 100 : null;
   return nombres.map(n => {
     const mias = results.filter(x => x.nombre === n);
     const sims = mias.filter(x => x.tipo === "simulacro").map(x => x.nota);
-    const ult = sims.slice(0, 5);
+    // racha: días seguidos (hora de Madrid) con algún test, contando hasta hoy o hasta ayer
+    const dias = new Set(mias.map(x => diaMadrid(x.fin)));
+    let racha = 0;
+    if (dias.has(hoy) || dias.has(ayer)) {
+      for (let t = dias.has(hoy) ? ahora : ahora - 86400000; dias.has(diaMadrid(t)); t -= 86400000) racha++;
+    }
+    const m5 = media(sims.slice(0, 5)), antes = media(sims.slice(5, 10));
     return {
       nombre: n,
       mejor: sims.length ? Math.max(...sims) : null,
-      media5: ult.length ? Math.round(ult.reduce((a, b) => a + b, 0) / ult.length * 100) / 100 : null,
+      media5: m5,
       simulacros: sims.length,
       semana: mias.filter(x => diaMadrid(x.fin) >= lunes).length,
+      simsSemana: mias.filter(x => x.tipo === "simulacro" && diaMadrid(x.fin) >= lunes).length,
       total: mias.length,
+      racha,
+      // las 10 últimas notas, de la más antigua a la más reciente, como fracción de su máximo
+      ultimas: mias.slice(0, 10).reverse().map(x => x.maximo ? Math.round(x.nota / x.maximo * 1000) / 1000 : 0),
+      // media de los 5 últimos simulacros menos la de los 5 anteriores (hacen falta al menos 2 en cada tanda)
+      subida: sims.length >= 7 && m5 !== null && antes !== null ? Math.round((m5 - antes) * 100) / 100 : null,
+      retos: ganados[n] || 0,
     };
   });
+}
+// Retos ganados: los terminados en que su nota fue la más alta (un empate cuenta para todas las empatadas)
+async function retosGanados(env) {
+  const { results } = await env.DB.prepare("SELECT reto, nombre, nota FROM reto_part WHERE terminado = 1 AND nota IS NOT NULL AND nombre != ?").bind(PRUEBA).all();
+  const porReto = {};
+  for (const x of results) (porReto[x.reto] ||= []).push(x);
+  const out = {};
+  for (const ps of Object.values(porReto)) {
+    if (ps.length < 2) continue;                       // un reto que termina una sola no se gana a nadie
+    const top = Math.max(...ps.map(x => x.nota));
+    for (const x of ps) if (x.nota === top) out[x.nombre] = (out[x.nombre] || 0) + 1;
+  }
+  return out;
 }
 
 // ---------- administración (contraseña en el secreto ADMIN) ----------
