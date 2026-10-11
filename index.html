@@ -292,7 +292,8 @@ footer{margin-top:48px;font-size:.8rem;color:var(--muted);text-align:center}
 .filas-tablero{display:grid;gap:6px;margin-top:6px}
 .fila-t{display:grid;grid-template-columns:minmax(84px,auto) minmax(56px,1fr) auto auto;gap:10px;align-items:center;font-size:.86rem;padding:6px 8px;border-radius:12px}
 .fila-t.yo{background:var(--accent-soft)}
-.fila-t svg{width:100%;height:24px;display:block}
+.fila-t .notas{display:flex;flex-wrap:wrap;gap:4px}
+.pill.gris{background:var(--surface-2);color:var(--muted)}
 .fila-t .racha{font-size:.76rem;color:var(--muted);white-space:nowrap}
 .fila-t .media{font-weight:700;font-variant-numeric:tabular-nums;text-align:right;min-width:2.6em}
 .insignias{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
@@ -1399,19 +1400,13 @@ function vistaTablero() {
     avatar(f.nombre, k === 1), el("span", { class: "nombre" }, f.nombre),
     el("span", { class: "cifra" }, `${f.semana} ${f.semana === 1 ? "test" : "tests"}`),
     el("div", { class: "peana", "aria-hidden": "true" }, String([2, 1, 3][k]))) : el("div", {}));
-  // las 10 últimas notas de cada una, como fracción de su máximo
-  const linea = u => {
-    if (!u || u.length < 2) return el("span", { class: "muted small" }, u && u.length ? "1 test" : "—");
-    const pts = u.map((v, i) => `${Math.round(i * 100 / (u.length - 1))},${(22 - v * 20).toFixed(1)}`).join(" ");
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.setAttribute("viewBox", "0 0 100 24"); svg.setAttribute("preserveAspectRatio", "none"); svg.setAttribute("role", "img");
-    svg.setAttribute("aria-label", "Evolución de las últimas notas");
-    svg.innerHTML = `<polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`;
-    return svg;
-  };
+  // las 5 últimas notas de cada una, la más reciente primero: verde si aprobó, gris si no
+  const notas = u => u && u.length
+    ? el("span", { class: "notas", "aria-label": "Últimas notas" }, u.map(x => el("span", { class: "pill " + (x.aprobado ? "ok" : "gris") }, coma(x.nota, 1))))
+    : el("span", { class: "muted small" }, "—");
   const filasT = filas.map(f => el("div", { class: "fila-t" + (f.nombre === usuario ? " yo" : "") },
     el("span", { class: "chip" }, avatar(f.nombre), f.nombre),
-    linea(f.ultimas),
+    notas(f.notas),
     el("span", { class: "racha" }, f.racha ? `Racha ${f.racha} d` : "—"),
     el("span", { class: "media", title: "Media de sus 5 últimos simulacros" }, f.media5 === null ? "—" : coma(f.media5))));
   // insignias: quién lidera cada cosa (los empates las comparten)
@@ -1433,7 +1428,7 @@ function vistaTablero() {
     el("div", { class: "podio" }, podio),
     el("div", { class: "filas-tablero" }, filasT),
     ins.length ? el("div", { class: "insignias" }, ins) : null,
-    el("p", { class: "muted small", style: "margin:10px 0 0" }, "Podio: tests y simulacros hechos desde el lunes. Línea: sus 10 últimas notas. Racha: días seguidos practicando. Número: media de sus 5 últimos simulacros (sobre 30).")
+    el("p", { class: "muted small", style: "margin:10px 0 0" }, "Podio: tests y simulacros hechos desde el lunes. Notas: sus 5 últimas, la más reciente primero (verde, aprobada). Racha: días seguidos practicando. Número: media de sus 5 últimos simulacros (sobre 30).")
   ].filter(Boolean));   // append() escribiría «null» como texto
   return caja;
 }
