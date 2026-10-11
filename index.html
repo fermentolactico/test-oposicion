@@ -408,6 +408,23 @@ function crear(tipo, temas, n) {
   return ex;
 }
 
+// La pregunta k de un test: la del banco o, si el test viene del registro, la copia guardada
+// con él (así se ve tal como se hizo aunque luego cambie o se retire del banco)
+const pq = (ex, k) => ex.copia ? ex.copia[k] : DATA.preguntas[ex.preguntas[k]];
+
+// El test entero en formato sencillo para el registro: preguntas con su texto, lo que se marcó
+// (null = en blanco) y el resultado. Unos 40 KB un simulacro; los PDF se hacen al pedirlos.
+function copiaTest(ex) {
+  return { v: 1, tipo: ex.tipo, temas: ex.temas, n: ex.n, reserva: ex.reserva, maximo: ex.maximo, minimo: ex.minimo,
+    minutos: ex.minutos, inicio: ex.inicio, usuario: ex.usuario, corregido: ex.corregido,
+    marcas: ex.preguntas.map((_, k) => ex.marcas[k] ?? null),
+    preguntas: ex.preguntas.map(i => { const p = DATA.preguntas[i]; return { id: p.id, t: p.t, e: p.e, o: p.o, c: p.c, of: p.of, x: p.x }; }) };
+}
+function deCopia(d) {
+  return { ...d, archivo: true, copia: d.preguntas, preguntas: d.preguntas.map((_, k) => k),
+    marcas: Object.fromEntries(d.marcas.map((m, k) => [k, m]).filter(([, m]) => m !== null)) };
+}
+
 // Tiempo empleado frente al del examen: «1:48:10 de 2:30:00» o «2:35:23, 5:23 de más»
 function tiempoTxt(ex) {
   const usado = Math.round((ex.corregido.fin - ex.inicio) / 1000), limite = ex.minutos * 60;
@@ -471,6 +488,7 @@ function inicio() {
       hist.slice(0, 12).map(h => el("li", {},
         el("span", {}, el("b", {}, h.tipo === "simulacro" ? "Simulacro" : "Test"), " ", el("span", { class: "muted" }, "· " + h.desc + " · " + fecha(h.fin))),
         el("span", { class: "pill " + (h.aprobado ? "ok" : "bad") }, coma(h.nota) + " / " + h.maximo))))) : null,
+    usuario ? el("div", { class: "row", style: "margin:8px 0" }, el("button", { class: "btn", onclick: misTests }, "Ver todos tus tests y respuestas")) : null,
     leer(K.pendientes, []).length ? el("p", { class: "muted small" }, "Hay resultados pendientes de enviar: se mandarán en cuanto haya conexión.") : null,
     hist.length || leer(K.usadas, []).length ? el("div", { class: "row", style: "margin-top:8px" }, botonBorrar()) : null,
     vistaComo(),
@@ -607,7 +625,7 @@ function test(ex) {
     const hist = leer(K.historial, []);
     hist.unshift({ tipo: ex.tipo, desc: (ex.reto ? "Reto · " : "") + (ex.tipo === "simulacro" ? "100 preguntas" : `${temasTxt(ex.temas)} · ${ex.n} preg.`), nota: ex.corregido.nota, maximo: ex.maximo, aprobado: ex.corregido.aprobado, fin: ex.corregido.fin });
     guardar(K.historial, hist.slice(0, 50));
-    const envio = { ...hist[0], a: ex.corregido.a, e: ex.corregido.e, b: ex.corregido.b, n: ex.n };
+    const envio = { ...hist[0], a: ex.corregido.a, e: ex.corregido.e, b: ex.corregido.b, n: ex.n, detalle: copiaTest(ex) };
     guardar(K.pendientes, [...leer(K.pendientes, []), envio]);
     resultado(ex);
     enviarPendientes();
@@ -638,7 +656,7 @@ function resultado(ex) {
   const r = ex.corregido, total = ex.n + ex.reserva;
   const color = r.aprobado ? "var(--ok)" : "var(--bad)";
   const tarjetas = ex.preguntas.map((qi, k) => {
-    const p = DATA.preguntas[qi], m = ex.marcas[k];
+    const p = pq(ex, k), m = ex.marcas[k];
     const estado = m === undefined ? "blank" : m === p.c ? "ok" : "bad";
     const art = el("article", { class: "q res-" + estado, "data-estado": estado, "data-reserva": k >= ex.n ? "1" : "" },
       el("div", { class: "head" }, el("span", { class: "n" }, k + 1), el("div", { class: "stem" }, p.e)),
@@ -677,8 +695,9 @@ function resultado(ex) {
     el("div", { class: "row", style: "margin:16px 0" },
       el("button", { class: "btn", onclick: () => pdfTest(ex) }, "Descargar test"),
       el("button", { class: "btn", onclick: () => pdfRespuestas(ex) }, "Descargar respuestas"),
-      el("button", { class: "btn primary", onclick: () => { borrar(K.actual); inicio(); } }, "Nuevo test")),
-    ex.reto ? clasificacionReto(ex) : null,
+      ex.archivo ? el("button", { class: "btn primary", onclick: misTests }, "Volver a mis tests")
+        : el("button", { class: "btn primary", onclick: () => { borrar(K.actual); inicio(); } }, "Nuevo test")),
+    ex.reto && !ex.archivo ? clasificacionReto(ex) : null,
     el("h3", { class: "section-title" }, "Por tema"),
     el("div", { class: "bytema" }, Object.entries(r.porTema).sort((a, b) => a[0] - b[0]).map(([t, v]) =>
       el("div", {}, el("span", {}, "T" + t), el("b", { style: `color:${v[0] === v[1] ? "var(--ok)" : v[0] === 0 ? "var(--bad)" : "var(--ink)"}` }, `${v[0]}/${v[1]}`)))),
@@ -686,6 +705,36 @@ function resultado(ex) {
     lista
   );
 }
+
+// ---------- mis tests: el registro de todo lo hecho, con las respuestas ----------
+async function misTests() {
+  pararReloj();
+  const cabecera = el("section", { class: "hero" }, el("h1", {}, "Mis tests"),
+    el("p", {}, "Todos los que has hecho, con tus respuestas. Abre uno para repasarlo o descargarlo en PDF."));
+  const volver = el("div", { class: "row", style: "margin-top:16px" }, el("button", { class: "btn", onclick: inicio }, "Volver"));
+  pintar(cabecera, el("p", { class: "muted" }, "Cargando…"));
+  let tests;
+  try { tests = (await api({ accion: "misTests", nombre: usuario, clave })).tests; }
+  catch (err) { pintar(cabecera, el("p", { class: "muted" }, "No se ha podido cargar: " + err.message), volver); return; }
+  const abrir = (t, boton) => async () => {
+    boton.disabled = true; boton.textContent = "Abriendo…";
+    try { resultado(deCopia((await api({ accion: "verTest", nombre: usuario, clave, fin: t.fin })).test)); }
+    catch (err) { boton.disabled = false; boton.textContent = "Ver"; alertaSuave(boton, err.message); }
+  };
+  const pendientes = leer(K.pendientes, []).length;
+  pintar(cabecera,
+    pendientes ? el("p", { class: "muted small" }, `${pendientes} pendiente${pendientes > 1 ? "s" : ""} de enviar: aparecerá${pendientes > 1 ? "n" : ""} aquí en cuanto haya conexión.`) : null,
+    tests.length ? el("div", { class: "card" }, el("ul", { class: "hist" }, tests.map(t => {
+      const boton = el("button", { class: "btn" }, "Ver");
+      boton.addEventListener("click", abrir(t, boton));
+      return el("li", {},
+        el("span", {}, el("b", {}, t.tipo === "simulacro" ? "Simulacro" : "Test"), " ", el("span", { class: "muted" }, "· " + t.desc + " · " + fecha(t.fin))),
+        el("span", { class: "row" }, el("span", { class: "pill " + (t.aprobado ? "ok" : "bad") }, coma(t.nota) + " / " + t.maximo),
+          t.entero ? boton : el("span", { class: "muted small", title: "Hecho antes de que la web guardara las respuestas" }, "solo la nota")));
+    }))) : el("p", { class: "muted" }, "Aún no tienes ningún test guardado."),
+    volver);
+}
+function alertaSuave(junto, texto) { junto.after(el("span", { class: "muted small", style: "color:var(--bad);margin-left:8px" }, texto)); }
 
 // ---------- origen de las preguntas (lo calcula exportar.py) ----------
 // ---------- cómo funciona ----------
@@ -992,7 +1041,7 @@ function clasificacionReto(ex) {
 const PDFC = { accent: [31, 111, 107], soft: [220, 236, 233], ink: [31, 42, 46], muted: [95, 107, 111], line: [226, 219, 208], ok: [46, 125, 79], okSoft: [225, 241, 230], bad: [180, 72, 60], badSoft: [247, 227, 223], paper: [255, 253, 249] };
 function nuevoPdf(titulo, sub) {
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });   // sin compress (por defecto false) un simulacro pesa ~600 KB
   const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 16;
   const ctx = { doc, W, H, M, y: 0, titulo };
   doc.setFillColor(...PDFC.accent); doc.rect(0, 0, W, 30, "F");
@@ -1038,7 +1087,7 @@ function pdfTest(ex) {
   const instr = doc.splitTextToSize(`Una sola respuesta correcta por pregunta. Acierto: ${coma(ex.maximo / ex.n, 3)} puntos; un error resta la cuarta parte de un acierto; en blanco, 0. Nota de 0 a ${ex.maximo}; se supera con ${ex.minimo}.` + (ex.reserva ? " Las preguntas de reserva se contestan, pero solo cuentan si se anula alguna." : ""), ancho);
   doc.text(instr, M, ctx.y); ctx.y += instr.length * lh(9) + 6;
   ex.preguntas.forEach((qi, k) => {
-    const p = DATA.preguntas[qi];
+    const p = pq(ex, k);
     if (k === ex.n && ex.reserva) separador(ctx, `Preguntas de reserva (${ex.n + 1}-${ex.n + ex.reserva})`);
     doc.setFont("helvetica", "bold"); doc.setFontSize(10.5);
     const stem = doc.splitTextToSize(p.e, ancho - 12);
@@ -1093,7 +1142,7 @@ function pdfRespuestas(ex) {
       const i = k - desde, col = i % cols;
       if (col === 0 && i > 0) ctx.y += ch + gap;
       if (col === 0) salto(ctx, ch + 2);
-      const x = M + col * (cw + gap), p = DATA.preguntas[ex.preguntas[k]], m = ex.marcas[k];
+      const x = M + col * (cw + gap), p = pq(ex, k), m = ex.marcas[k];
       const est = !r ? "n" : m === undefined ? "blank" : m === p.c ? "ok" : "bad";
       doc.setFillColor(...(est === "ok" ? PDFC.okSoft : est === "bad" ? PDFC.badSoft : est === "blank" ? [240, 235, 227] : PDFC.soft));
       doc.roundedRect(x, ctx.y, cw, ch, 2, 2, "F");
